@@ -37,7 +37,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
     for (let index = 0; index < source.length; index++) {
       hash = (hash * 31 + source.charCodeAt(index)) % 900000;
     }
-    return `KAS-${String(100000 + hash).slice(0, 6)}`;
+    return `VS-${String(100000 + hash).slice(0, 6)}`;
   });
 
   const handleDownloadPDF = () => {
@@ -56,7 +56,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
       origin: { y: 0.7 }
     });
     const svg = generateBlueprintSVG(room, bundle.products, clientName);
-    downloadFile(svg, `Kohler_CAD_Blueprint_${room.length}x${room.width}_${Date.now()}.svg`, 'image/svg+xml');
+    downloadFile(svg, `Verre_Studio_CAD_Blueprint_${room.length}x${room.width}_${Date.now()}.svg`, 'image/svg+xml');
   };
 
   const handleDownloadBOQCSV = () => {
@@ -66,11 +66,11 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
       origin: { y: 0.7 }
     });
     const csv = generateBOQCSV(room, bundle.products, finishes, quotation);
-    downloadFile(csv, `Kohler_Contractor_BOQ_${Date.now()}.csv`, 'text/csv;charset=utf-8;');
+    downloadFile(csv, `Verre_Studio_Contractor_BOQ_${Date.now()}.csv`, 'text/csv;charset=utf-8;');
   };
 
   const handleCopySummary = () => {
-    const text = `KOHLER AI BATHROOM DESIGN SPECIFICATION\nRoom: ${room.length}x${room.width} ft\nTotal Investment: ₹${quotation.grandTotal.toLocaleString('en-IN')}\nFixtures:\n` +
+    const text = `VERRE STUDIO AI BATHROOM DESIGN SPECIFICATION\nRoom: ${room.length}x${room.width} ft\nTotal Investment: ₹${quotation.grandTotal.toLocaleString('en-IN')}\nFixtures:\n` +
       bundle.products.map(p => `- ${p.name} (₹${p.price.toLocaleString('en-IN')})`).join('\n') +
       `\nSurface Finishes:\n- Floor: ${quotation.floorFinishName} (₹${quotation.floorMaterialCost.toLocaleString('en-IN')})\n- Walls: ${quotation.wallFinishName} (₹${quotation.wallMaterialCost.toLocaleString('en-IN')})\nLabour & Services: ₹${(quotation.installationCost + quotation.plumbingElectricalCost).toLocaleString('en-IN')}\nGST: ₹${quotation.gstAmount.toLocaleString('en-IN')}`;
     navigator.clipboard.writeText(text);
@@ -214,7 +214,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-200 block">Unofficial concept project estimate</span>
-                <span className="text-[11px] text-slate-400">Uses Kohler-style names/pricing for design demonstration only</span>
+                <span className="text-[11px] text-slate-400">Uses Verre Studio catalog specifications and pricing for design demonstration only</span>
               </div>
             </div>
 

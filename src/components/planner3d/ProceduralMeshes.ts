@@ -90,7 +90,7 @@ export function createFixtureMesh(product: PlacedProduct, mats: any): THREE.Grou
         leverHandle.position.set(-w * 0.54, h * 1.1, -d * 0.2);
         group.add(leverHandle);
       } else {
-        // --- 3. KOHLER NUMI 2.0 / VEIL MONOLITHIC SMART TOILET ---
+        // --- 3. VERRE STUDIO NUMI 2.0 / VEIL MONOLITHIC SMART TOILET ---
         const bodyMat = product.id.includes('numi') ? mats.matteBlackMaterial : mats.ceramicWhite;
 
         // Monolithic Chamfered Shroud

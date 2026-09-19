@@ -17,10 +17,10 @@ export const BusinessImpactCard: React.FC = () => {
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 font-mono">
-              KOHLER BUSINESS & SUSTAINABILITY LAYER
+              VERRE STUDIO BUSINESS & SUSTAINABILITY LAYER
             </span>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Why KOHLER? Dual-Sided Value Proposition
+              Why Verre Studio? Dual-Sided Value Proposition
             </h3>
           </div>
         </div>
@@ -57,12 +57,12 @@ export const BusinessImpactCard: React.FC = () => {
           </div>
         </div>
 
-        {/* KOHLER Commercial Value Column */}
+        {/* Verre Studio Commercial Value Column */}
         <div className="bg-slate-50 dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-gold-600 dark:text-gold-400 font-bold text-sm mb-2">
               <TrendingUp className="w-4 h-4" />
-              <span>For KOHLER Enterprise</span>
+              <span>For Verre Studio Enterprise</span>
             </div>
             <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
               <li className="flex items-start gap-2">

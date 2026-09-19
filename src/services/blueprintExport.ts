@@ -173,7 +173,7 @@ export function generateBlueprintSVG(
   <line x1="${margin}" y1="${titleY - 15}" x2="${widthPx - margin}" y2="${titleY - 15}" stroke="#cbd5e1" stroke-width="1" />
   <text x="${margin}" y="${titleY}" font-size="11" font-weight="bold" fill="#0f172a">PROJECT: ${projectName.toUpperCase()}</text>
   <text x="${margin}" y="${titleY + 14}" font-size="9" fill="#64748b">SCALE: 1/2" = 1'-0" | ROOM: ${room.length}' × ${room.width}' × ${room.height}' (${(room.length * room.width).toFixed(0)} SQ.FT)</text>
-  <text x="${widthPx - margin}" y="${titleY}" text-anchor="end" font-size="10" font-weight="bold" fill="#0f172a">KOHLER AI STUDIO ARCHITECTURAL BIM</text>
+  <text x="${widthPx - margin}" y="${titleY}" text-anchor="end" font-size="10" font-weight="bold" fill="#0f172a">VERRE STUDIO ARCHITECTURAL BIM</text>
   <text x="${widthPx - margin}" y="${titleY + 14}" text-anchor="end" font-size="9" fill="#64748b">PLUMBING ROUGH-IN BLUEPRINT</text>
 </svg>`;
 
@@ -221,7 +221,7 @@ export function generateBOQCSV(
     `5,WATERPROOFING,"Dual-Layer Elastomeric Waterproofing Membrane","Dry zone & wet shower envelope",${waterproofingRolls},ROLLS,Rs.3200,Rs.${waterproofingRolls * 3200}`,
     // 3. Fixtures
     ...products.map((p, idx) => {
-      return `${idx + 6},SANITARY / FIXTURE,"${p.name}","Brand: ${p.brand || 'Kohler'} | Finish: ${p.finish} | ${p.width}'x${p.depth}'",1,NOS,Rs.${p.price},Rs.${p.price}`;
+      return `${idx + 6},SANITARY / FIXTURE,"${p.name}","Brand: ${p.brand || 'Verre Studio'} | Finish: ${p.finish} | ${p.width}'x${p.depth}'",1,NOS,Rs.${p.price},Rs.${p.price}`;
     }),
     // 4. Labor & Services
     `${products.length + 6},INSTALLATION & LABOUR,"Tile Laying, Sanitary Plumbing & Fixture Mounting","Qualified plumber and master mason team",1,JOB,Rs.${labourCost},Rs.${labourCost}`,

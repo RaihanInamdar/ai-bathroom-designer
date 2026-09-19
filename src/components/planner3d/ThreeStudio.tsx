@@ -1016,7 +1016,7 @@ export const ThreeStudio: React.FC<ThreeStudioProps> = ({
     if (!renderer) return;
     const dataUrl = renderer.domElement.toDataURL('image/png');
     const link = document.createElement('a');
-    link.download = `Kohler_3D_${style}_${Date.now()}.png`;
+    link.download = `Verre_Studio_3D_${style}_${Date.now()}.png`;
     link.href = dataUrl;
     link.click();
   };

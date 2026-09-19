@@ -54,7 +54,7 @@ export const ChangeDesignBar: React.FC<ChangeDesignBarProps> = ({
 
   const QUICK_PROMPTS = [
     { label: '📉 Reduce below ₹85,000', prompt: 'Reduce the total cost below ₹85,000 while keeping the smart toilet and design style' },
-    { label: '👑 Make it more luxurious', prompt: 'Make the design more luxurious with flagship Kohler smart fixtures' },
+    { label: '👑 Make it more luxurious', prompt: 'Make the design more luxurious with flagship Verre Studio smart fixtures' },
     { label: '🛁 I want a bathtub', prompt: 'Add a freestanding soaking bathtub into the wet zone' },
     { label: '💧 Improve water efficiency', prompt: 'Maximize water conservation score using Class Five dual flush and Katalyst rainhead' },
   ];

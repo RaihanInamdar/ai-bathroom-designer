@@ -76,15 +76,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-3 cursor-pointer group select-none shrink-0"
         >
           <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-400 via-gold-500 to-amber-600 flex items-center justify-center text-slate-950 font-bold shadow-glow-gold group-hover:scale-105 transition-all">
-            <span className="font-serif text-base tracking-tighter font-extrabold">K</span>
+            <span className="font-serif text-base tracking-tighter font-extrabold">V</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-black font-serif tracking-widest text-slate-900 dark:text-white">
-                KOHLER
+                VERRE STUDIO
               </span>
               <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-mono font-bold border border-amber-500/30">
-                STUDIO AI
+                AI
               </span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 tracking-wider uppercase font-medium">

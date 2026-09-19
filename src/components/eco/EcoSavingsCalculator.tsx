@@ -17,7 +17,7 @@ export const EcoSavingsCalculator: React.FC<EcoSavingsCalculatorProps> = ({ bund
   const [householdMembers, setHouseholdMembers] = useState(4);
 
   // Math Calculations:
-  // 1. Toilet savings: 13L standard - 3.8L Kohler dual flush = 9.2L saved per flush.
+  // 1. Toilet savings: 13L standard - 3.8L Verre Studio dual flush = 9.2L saved per flush.
   // 4 flushes/person/day * 9.2L * 365 days * householdMembers
   const toiletSavingsLiters = Math.round(householdMembers * 4 * 9.2 * 365);
 

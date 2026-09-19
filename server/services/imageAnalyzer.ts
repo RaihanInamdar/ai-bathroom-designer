@@ -207,7 +207,7 @@ function validateAnalysisShape(raw: any, userGivenWidth?: number): ImageAnalysis
           .slice(0, 6)
           .map((item: any) => ({
             existingIssue: typeof item.existingIssue === 'string' ? item.existingIssue : 'Observed bathroom issue',
-            recommendedKohlerFixture: typeof item.recommendedKohlerFixture === 'string' ? item.recommendedKohlerFixture : 'Kohler fixture recommendation',
+            recommendedKohlerFixture: typeof item.recommendedKohlerFixture === 'string' ? item.recommendedKohlerFixture : 'Verre Studio fixture recommendation',
             spaceOrWaterBenefit: typeof item.spaceOrWaterBenefit === 'string' ? item.spaceOrWaterBenefit : 'Improves space planning or water efficiency.'
           }))
       : [],
@@ -364,7 +364,7 @@ export async function analyzeBathroomImage(
     const rawAnalysis = await callAnthropicVision(image, userGivenWidth);
     return validateAnalysisShape(rawAnalysis, userGivenWidth);
   } catch (error: any) {
-    console.warn('[KOHLER AI Vision] Falling back to low-confidence result:', error?.message || error);
+    console.warn('[Verre Studio AI Vision] Falling back to low-confidence result:', error?.message || error);
     return fallbackAnalysis(error?.message || 'Unknown vision analysis failure', userGivenWidth);
   }
 }

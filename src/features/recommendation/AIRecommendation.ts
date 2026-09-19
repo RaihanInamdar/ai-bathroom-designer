@@ -126,8 +126,8 @@ export function generateAIRecommendations(input: RecommendationInput): Recommend
     optimal: createBundle(
       'optimal',
       preferredArchetype || 'symmetrical_focal',
-      'Kohler Architectural Harmony',
-      'Balanced design optimizing ergonomics, style affinity, and Kohler WaterSense efficiency.',
+      'Verre Studio Architectural Harmony',
+      'Balanced design optimizing ergonomics, style affinity, and Verre Studio WaterSense efficiency.',
       'AI recommended configuration featuring balanced circulation and premium materials.'
     ),
     budgetSaver: createBundle(
@@ -142,7 +142,7 @@ export function generateAIRecommendations(input: RecommendationInput): Recommend
       'wet_room_suite',
       'Presidential Master Sanctuary',
       'Flagship intelligent suite with smart bidet, cascading waterfall fixtures, and spa zoning.',
-      'Ultra-luxury architectural wet-room suite with top-tier Kohler finishes.'
+      'Ultra-luxury architectural wet-room suite with top-tier Verre Studio finishes.'
     )
   };
 }

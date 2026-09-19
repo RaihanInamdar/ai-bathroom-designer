@@ -29,7 +29,7 @@ const DESIGN_STYLES: DesignStyle[] = [
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString(), brand: 'KOHLER AI Studio' });
+  res.json({ status: 'ok', time: new Date().toISOString(), brand: 'Verre Studio AI' });
 });
 
 // Products catalog
@@ -159,5 +159,5 @@ app.get('/api/designs', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[KOHLER AI API] Server running on http://localhost:${PORT}`);
+  console.log(`[Verre Studio API] Server running on http://localhost:${PORT}`);
 });

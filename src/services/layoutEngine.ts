@@ -33,7 +33,7 @@ function createExplainability(
     spaceScore: frontClearanceAvailable >= 2.5 ? 98 : 92,
     spaceReason: `${product.width}' x ${product.depth}' footprint fits with ${frontClearanceAvailable.toFixed(1)} ft front clearance buffer.`,
     budgetScore: 94,
-    budgetReason: `Delivers premium Kohler materials within target allocation.`,
+    budgetReason: `Delivers premium Verre Studio materials within target allocation.`,
     styleScore: isStyleMatch ? 97 : 88,
     styleReason: isStyleMatch
       ? `Engineered for ${styleName} aesthetics with ${product.finish} finish.`
@@ -45,7 +45,7 @@ function createExplainability(
         ? 'Laminar aerated flow stream reduces sink water consumption.'
         : 'Lower-flow fixture efficiency estimate.',
     clearanceVerified: true,
-    clearanceNote: `Meets Kohler ergonomics standard: ${product.clearance.front} ft front and ${product.clearance.sides} ft side clearances.`
+    clearanceNote: `Meets Verre Studio ergonomics standard: ${product.clearance.front} ft front and ${product.clearance.sides} ft side clearances.`
   };
 }
 

@@ -81,7 +81,7 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
     {
       id: 'msg-1',
       sender: 'ai',
-      text: `Hello! I'm your **Kohler Spatial Copilot**.\n\nAsk me to **suggest toilets**, switch themes (Zen, Luxury, Modern), adjust budgets, or review planning references.`,
+      text: `Hello! I'm your **Verre Studio Spatial Copilot**.\n\nAsk me to **suggest toilets**, switch themes (Zen, Luxury, Modern), adjust budgets, or review planning references.`,
       timestamp: 'Just now'
     }
   ]);
@@ -456,7 +456,7 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
       {
         id: 'msg-init',
         sender: 'ai',
-        text: `Chat cleared! How can I assist with your Kohler bathroom layout?`,
+        text: `Chat cleared! How can I assist with your Verre Studio bathroom layout?`,
         timestamp: 'Just now'
       }
     ]);
@@ -497,7 +497,7 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
-                    Kohler Copilot
+                    Verre Studio Copilot
                   </h3>
                   <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     Assisted
@@ -557,7 +557,7 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
                         <div className="mt-3.5 flex flex-col gap-2.5">
                           <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
                             <Sparkles className="w-3 h-3" />
-                            Suggested Kohler Fixtures
+                            Suggested Verre Studio Fixtures
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {m.suggestedProducts.map((prod) => (

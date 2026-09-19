@@ -210,7 +210,7 @@ function generateExplainability(
 
   const waterScore = isWaterSmart ? 95 : 88;
   const waterReason = product.category === 'smart_toilet' || product.category === 'toilet'
-    ? `Kohler Class Five 3.8L dual flush saves up to 53,700 L/yr compared to traditional 13L tanks.`
+    ? `Verre Studio Class Five 3.8L dual flush saves up to 53,700 L/yr compared to traditional 13L tanks.`
     : (product.category === 'faucet'
       ? `Aerated 1.2 gpm laminar stream reduces sink water consumption by 45%.`
       : `Engineered for flow efficiency with Katalyst air-induction technology.`);
@@ -813,7 +813,7 @@ function calculateWaterSavings(householdMembers: number = 4): WaterSavingsReport
     assumptions: [
       `Assumes a ${householdMembers}-person household (4 flushes/person/day, 8 min average shower).`,
       `Baseline assumes dated 13L single-flush gravity commode & un-aerated 2.2 gpm brass fixtures.`,
-      `Kohler design uses Class Five 3.8L dual-flush and Katalyst 1.75 gpm air-induction rainhead.`,
+      `Verre Studio design uses Class Five 3.8L dual-flush and Katalyst 1.75 gpm air-induction rainhead.`,
       `Savings use a conservative ₹${waterTariffInrPerLiter.toFixed(2)}/L water tariff plus ₹${heatedWaterEnergyInrPerLiter.toFixed(2)}/L heating energy only for faucet and shower usage.`
     ]
   };
@@ -877,7 +877,7 @@ export function generateRecommendations(req: RecommendationRequest): Recommendat
     designScore: calculateDesignScore(luxResult.placedProducts, req.room, req.budget * 1.5, req.style),
     waterSavings: calculateWaterSavings(4),
     searchMetrics: luxResult.metrics,
-    aiSummary: `Flagship intelligent wellness tier featuring Kohler Numi 2.0 bidet, Anthem digital controls, and organic soaking stone.`
+    aiSummary: `Flagship intelligent wellness tier featuring Verre Studio Numi 2.0 bidet, Anthem digital controls, and organic soaking stone.`
   };
 
   const bundles = [optimal, budgetSaver, luxuryUpgrade];

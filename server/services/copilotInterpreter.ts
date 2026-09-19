@@ -423,56 +423,56 @@ function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotAc
       return {
         action: 'add_fixture',
         params: { category: 'bathtub' },
-        assistantReply: 'Added a luxury Kohler freestanding soaking bathtub to the spatial layout. Aligning with wet zone plumbing.'
+        assistantReply: 'Added a luxury Verre Studio freestanding soaking bathtub to the spatial layout. Aligning with wet zone plumbing.'
       };
     }
     if (/\b(smart toilet|veil|numi|innate)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'smart_toilet' },
-        assistantReply: 'Added a Kohler Intelligent Smart Toilet with bidet and heated seat along the primary soil stack wall.'
+        assistantReply: 'Added a Verre Studio Intelligent Smart Toilet with bidet and heated seat along the primary soil stack wall.'
       };
     }
     if (/\b(toilet|commode|wc|closet)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'toilet' },
-        assistantReply: 'Added an ergonomic Kohler water-saving toilet to the layout.'
+        assistantReply: 'Added an ergonomic Verre Studio water-saving toilet to the layout.'
       };
     }
     if (/\b(vanity|basin|sink|countertop|cabinet)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'vanity' },
-        assistantReply: 'Added a designer Kohler vanity unit with integrated vessel basin.'
+        assistantReply: 'Added a designer Verre Studio vanity unit with integrated vessel basin.'
       };
     }
     if (/\b(shower|rainhead|showerhead)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'shower' },
-        assistantReply: 'Added a Kohler thermostatic rainfall shower system with body sprays.'
+        assistantReply: 'Added a Verre Studio thermostatic rainfall shower system with body sprays.'
       };
     }
     if (/\b(mirror|led mirror)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'mirror' },
-        assistantReply: 'Added a Kohler backlit LED vanity mirror above the basin.'
+        assistantReply: 'Added a Verre Studio backlit LED vanity mirror above the basin.'
       };
     }
     if (/\b(faucet|tap|mixer)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'faucet' },
-        assistantReply: 'Added a Kohler brassware basin mixer faucet.'
+        assistantReply: 'Added a Verre Studio brassware basin mixer faucet.'
       };
     }
     if (/\b(accessory|accessories|towel bar|robe hook)\b/i.test(msg)) {
       return {
         action: 'add_fixture',
         params: { category: 'accessory' },
-        assistantReply: 'Added Kohler polished chrome bathroom accessory fittings.'
+        assistantReply: 'Added Verre Studio polished chrome bathroom accessory fittings.'
       };
     }
   }
@@ -524,7 +524,7 @@ function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotAc
       return `${idx + 1}. **${p.name}** — **${priceFormatted}**\n   • Dimensions: ${p.width}ft(W) × ${p.depth}ft(D) × ${p.height}ft(H)\n   • Material: ${p.material || 'Vitreous China'} | Finish: ${p.finish || 'Gloss White'}\n   • Highlights: ${highlights}\n   • *${p.description || ''}*`;
     }).join('\n\n');
 
-    const reply = `Here are the top-rated Kohler **${label}** matching your bathroom spatial profile:\n\n${productLines}\n\n💡 *Tip: You can ask me to adjust theme, budget, room size, or fixtures anytime!*`;
+    const reply = `Here are the top-rated Verre Studio **${label}** matching your bathroom spatial profile:\n\n${productLines}\n\n💡 *Tip: You can ask me to adjust theme, budget, room size, or fixtures anytime!*`;
 
     return {
       action: 'explain',
@@ -670,7 +670,7 @@ function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotAc
     return {
       action: 'regenerate',
       params: { reason: 'User requested regeneration' },
-      assistantReply: `Regenerating optimized architectural layout based on your current constraints and Kohler design rules.`
+      assistantReply: `Regenerating optimized architectural layout based on your current constraints and Verre Studio design rules.`
     };
   }
 
@@ -688,7 +688,7 @@ function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotAc
     return {
       action: 'explain',
       params: { topic: 'greeting' },
-      assistantReply: `👋 Hello! I am your **Kohler Spatial Copilot**.\n\nHere is how I can assist you:\n• **Toilets & Fixtures:** Ask *"Suggest toilets"* or *"Recommend smart bidets"*\n• **Change Themes:** *"Switch to Japanese Zen"* or *"Classic Luxury with marble"*\n• **Budget Tuning:** *"Set budget to ₹75,000"* or *"Budget under 1.5 Lakh"*\n• **Room Resizing:** *"Make room 10x8"* or *"Expand room to 12 by 9"*\n• **Bathtubs:** *"Add soaking tub"* or *"Remove bathtub"*\n• **Plumbing Specs:** *"Explain drain slope and clearances"*`
+      assistantReply: `👋 Hello! I am your **Verre Studio Spatial Copilot**.\n\nHere is how I can assist you:\n• **Toilets & Fixtures:** Ask *"Suggest toilets"* or *"Recommend smart bidets"*\n• **Change Themes:** *"Switch to Japanese Zen"* or *"Classic Luxury with marble"*\n• **Budget Tuning:** *"Set budget to ₹75,000"* or *"Budget under 1.5 Lakh"*\n• **Room Resizing:** *"Make room 10x8"* or *"Expand room to 12 by 9"*\n• **Bathtubs:** *"Add soaking tub"* or *"Remove bathtub"*\n• **Plumbing Specs:** *"Explain drain slope and clearances"*`
     };
   }
 

@@ -27,7 +27,7 @@ export const JudgeDemoStepper: React.FC<JudgeDemoStepperProps> = ({ currentStep 
             <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse" />
             <span className="font-bold text-gold-400 text-[11px] font-mono tracking-wide flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5" />
-              KOHLER ARCHITECTURE RUBRIC
+              VERRE STUDIO ARCHITECTURE RUBRIC
             </span>
           </div>
           <span className="text-[11px] text-slate-400 hidden lg:inline font-medium">

@@ -190,7 +190,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
       id: 'premium',
       title: 'Presidential Suite',
       subtitle: 'Ultimate Intelligent Wellness',
-      desc: 'Kohler Numi 2.0 intelligent bidet, hydrotherapy multi-zone shower columns, and cast resin stone baths.',
+      desc: 'Verre Studio Numi 2.0 intelligent bidet, hydrotherapy multi-zone shower columns, and cast resin stone baths.',
       colors: ['#ca8a04', '#0f172a', '#38bdf8', '#d4af37'],
       badge: 'Top Tier'
     }
@@ -502,7 +502,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
                     <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
                       <Scan className="w-10 h-10 text-gold-400 animate-bounce" />
                       <span className="text-sm font-bold text-slate-200 animate-pulse">
-                        Scanning Rough-ins & Spatial Ratios...
+                        Estimating Fixtures & Spatial Layout...
                       </span>
                     </div>
                   )}
@@ -569,7 +569,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
                     </div>
 
                     <div className="bg-slate-100 dark:bg-slate-900/50 p-2.5 rounded-xl">
-                      <span className="text-slate-500 block mb-1">Detected Plumbing Rough-ins:</span>
+                      <span className="text-slate-500 block mb-1">Estimated Plumbing Rough-in Zones:</span>
                       <ul className="list-disc list-inside text-slate-700 dark:text-slate-300 space-y-0.5">
                         {scanResult.detectedLayout.plumbingLocations.length > 0
                           ? scanResult.detectedLayout.plumbingLocations.map((loc, i) => (

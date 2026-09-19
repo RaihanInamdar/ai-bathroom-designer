@@ -28,12 +28,12 @@ export function generateQuotationPDF(
   doc.setTextColor(212, 175, 55); // Gold
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('KOHLER AI STUDIO', 20, 18);
+  doc.text('VERRE STUDIO AI', 20, 18);
 
   doc.setTextColor(240, 240, 240);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const ref = quotationRef || `KAS-${String(Math.abs(`${room.length}x${room.width}-${bundle.bundleType}`.split('').reduce((hash, char) => hash * 31 + char.charCodeAt(0), 7)) % 900000 + 100000).slice(0, 6)}`;
+  const ref = quotationRef || `VS-${String(Math.abs(`${room.length}x${room.width}-${bundle.bundleType}`.split('').reduce((hash, char) => hash * 31 + char.charCodeAt(0), 7)) % 900000 + 100000).slice(0, 6)}`;
   doc.text('Concept Bathroom Specification & Estimate', 20, 26);
   doc.text(`Ref: #${ref} | Date: ${new Date().toLocaleDateString('en-IN')}`, 20, 32);
 
@@ -196,7 +196,7 @@ export function generateQuotationPDF(
   y += 6;
   doc.text('• Unofficial concept project estimate; confirm product availability and warranty with the retailer.', 20, y);
   y += 5;
-  doc.text('• Prices are illustrative and may not match current Kohler or dealer pricing.', 20, y);
+  doc.text('• Prices are illustrative and may not match current Verre Studio or dealer pricing.', 20, y);
   y += 5;
   doc.text('• Plumbing rough-ins and clearances are planning estimates, not code-compliance certification.', 20, y);
   y += 5;
@@ -207,8 +207,8 @@ export function generateQuotationPDF(
   doc.rect(0, 285, pageWidth, 12, 'F');
   doc.setTextColor(212, 175, 55);
   doc.setFontSize(7.5);
-  doc.text('KOHLER CO. — THE BOLD LOOK OF KOHLER | Generated with AI Bathroom Studio', pageWidth / 2, 292, { align: 'center' });
+  doc.text('VERRE STUDIO — ARCHITECTURAL BATHROOM DESIGN | Generated with AI Bathroom Studio', pageWidth / 2, 292, { align: 'center' });
 
   // Save PDF
-  doc.save(`Kohler_AI_Quotation_${room.length}x${room.width}_${Date.now()}.pdf`);
+  doc.save(`Verre_Studio_Quotation_${room.length}x${room.width}_${Date.now()}.pdf`);
 }

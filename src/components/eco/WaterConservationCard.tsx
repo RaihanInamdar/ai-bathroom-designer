@@ -13,7 +13,7 @@ interface WaterConservationCardProps {
 
 export const WaterConservationCard: React.FC<WaterConservationCardProps> = ({ savings }) => {
   const baselineWidth = 100;
-  const kohlerWidth = Math.round((savings.annualKohlerLiters / savings.annualBaselineLiters) * 100);
+  const verreWidth = Math.round((savings.annualKohlerLiters / savings.annualBaselineLiters) * 100);
 
   return (
     <div className="glass-panel p-6 rounded-3xl border border-cyan-500/30 flex flex-col gap-5 shadow-lg">
@@ -26,7 +26,7 @@ export const WaterConservationCard: React.FC<WaterConservationCardProps> = ({ sa
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold font-mono border border-cyan-500/30">
-                KOHLER WATER CONSERVATION METRIC
+                VERRE STUDIO WATER CONSERVATION METRIC
               </span>
               <span className="text-xs text-slate-500">•</span>
               <span className="text-xs text-slate-400">Estimated, not certified</span>
@@ -60,12 +60,12 @@ export const WaterConservationCard: React.FC<WaterConservationCardProps> = ({ sa
         <div>
           <div className="flex items-center justify-between mb-1.5 text-slate-600 dark:text-slate-400">
             <span className="font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
-              ✨ AI KOHLER Water-Smart Design
+              ✨ AI Verre Studio Water-Smart Design
             </span>
             <span className="font-bold text-cyan-600 dark:text-cyan-400">{savings.annualKohlerLiters.toLocaleString('en-IN')} Liters/yr</span>
           </div>
           <div className="w-full bg-slate-200 dark:bg-slate-800 h-4 rounded-xl overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-xl" style={{ width: `${kohlerWidth}%` }} />
+            <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-xl" style={{ width: `${verreWidth}%` }} />
           </div>
         </div>
       </div>
