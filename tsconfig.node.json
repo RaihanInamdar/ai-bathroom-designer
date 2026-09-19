@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "strict": true
+  },
+  "include": [
+    "vite.config.ts",
+    "server/**/*.ts",
+    "src/types/**/*.ts",
+    "src/services/layoutEngine.ts"
+  ]
+}
