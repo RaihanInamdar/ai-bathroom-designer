@@ -158,6 +158,35 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
     assistantReply: string;
   }
 
+  const parseCopilotResponse = async (response: Response): Promise<CopilotActionResponse> => {
+    const text = await response.text();
+
+    if (!text.trim()) {
+      throw new Error(
+        response.ok
+          ? 'Copilot returned an empty response.'
+          : 'Backend server is not reachable. Start it with npm run server in a second terminal.'
+      );
+    }
+
+    let payload: any;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      throw new Error(
+        response.ok
+          ? 'Copilot returned an invalid response.'
+          : 'Backend server returned a non-JSON error. Check the server terminal for details.'
+      );
+    }
+
+    if (!response.ok || payload?.success === false) {
+      throw new Error(payload?.error || `Copilot request failed with HTTP ${response.status}.`);
+    }
+
+    return payload as CopilotActionResponse;
+  };
+
   const styleFinishPresets: Record<DesignStyle, SurfaceFinishes> = {
     japanese_zen: { floor: 'wooden_hinoki', wall: 'designer_fluted_3d' },
     classic_luxury: { floor: 'marble_carrara', wall: 'marble_calacatta_gold' },
@@ -399,7 +428,7 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
         })
       });
 
-      const action = await response.json() as CopilotActionResponse;
+      const action = await parseCopilotResponse(response);
       const canMutate = action.action !== 'unsupported' && action.action !== 'explain';
       if (canMutate) executeAction(action);
 

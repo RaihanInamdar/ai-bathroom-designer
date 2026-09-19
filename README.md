@@ -9,7 +9,7 @@ npm install
 npm run dev:all
 ```
 
-The Vite app runs on `http://localhost:5173` and proxies API calls to the Express server on `http://localhost:5000`.
+Use `npm run dev:all` from one terminal. It starts both the Express API and the Vite frontend together. The Vite app runs on `http://localhost:5173` and proxies API calls to the Express server on `http://localhost:5000`.
 
 If port `5000` is already in use, stop the old server first. If you change `PORT` in `.env`, also update the Vite proxy target in `vite.config.ts`.
 
@@ -22,6 +22,10 @@ npm run dev:all
 npm run build
 npm test
 ```
+
+- `npm run dev:all` starts API + frontend together in one terminal.
+- `npm run dev` starts only the frontend.
+- `npm run server` starts only the backend API.
 
 ## Environment
 
