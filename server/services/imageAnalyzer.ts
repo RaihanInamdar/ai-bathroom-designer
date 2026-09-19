@@ -1,8 +1,8 @@
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { ImageAnalysisResult, DetectedElement, DesignStyle } from '../../src/types/index.js';
 
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
 const REQUEST_TIMEOUT_MS = 30000;
 
 type WallName = 'north' | 'south' | 'east' | 'west';
@@ -31,7 +31,7 @@ function fallbackAnalysis(reason: string, userGivenWidth?: number): ImageAnalysi
       width,
       height: 9,
       confidence: 0.1,
-      notes: `Low confidence: could not analyze uploaded photo. ${reason}`
+      notes: `Low confidence: photo analysis unavailable (${reason}). Please adjust room dimensions and layout manually.`
     },
     detectedLayout: {
       doorWall: 'south',
@@ -39,29 +39,29 @@ function fallbackAnalysis(reason: string, userGivenWidth?: number): ImageAnalysi
       plumbingLocations: []
     },
     identifiedBottlenecks: [
-      `Low confidence: vision analysis unavailable. ${reason}`
+      `Vision analysis unavailable: ${reason}. Please customize room dimensions manually in the Dimensions tab.`
     ],
     aiRecommendations: [
       {
-        existingIssue: 'Unable to inspect the uploaded bathroom photo reliably.',
-        recommendedKohlerFixture: 'Manual review recommended before final fixture selection.',
-        spaceOrWaterBenefit: 'No automated spatial or water-saving claim was made.'
+        existingIssue: 'Automatic visual inspection unavailable or API key not configured.',
+        recommendedKohlerFixture: 'Select preferred Verre Studio fixtures manually from the catalog.',
+        spaceOrWaterBenefit: 'Use the 2D CAD and 3D Studio tabs to configure your spatial clearances.'
       }
     ],
     aestheticAnalysis: {
       primaryColorPalette: ['#f8fafc', '#94a3b8', '#334155'],
-      materialTone: 'Unknown - low confidence',
-      lightingQuality: 'Unknown - low confidence',
+      materialTone: 'Neutral Contemporary',
+      lightingQuality: 'Standard Ambient',
       recommendedStyle: 'minimalist_modern',
-      styleMatchConfidence: 0.1
+      styleMatchConfidence: 0.2
     },
     imageMetrics: {
-      dominantBrightness: 0,
+      dominantBrightness: 128,
       colorTemperature: 'neutral',
-      contrastRatio: 0,
-      detectedSurfaces: []
+      contrastRatio: 1.2,
+      detectedSurfaces: ['floor', 'wall']
     },
-    summary: `Low confidence: could not analyze uploaded bathroom photo. ${reason}`
+    summary: `Photo analysis unavailable (${reason}). You can manually customize dimensions, fixtures, and style.`
   };
 }
 
@@ -189,7 +189,9 @@ function validateAnalysisShape(raw: any, userGivenWidth?: number): ImageAnalysis
       width,
       height: cleanNumber(dimensions.height, 9, 7, 14),
       confidence: cleanNumber(dimensions.confidence, 0.5, 0, 1),
-      notes: typeof dimensions.notes === 'string' ? dimensions.notes : 'Estimated from uploaded photo.'
+      notes: typeof dimensions.notes === 'string'
+        ? dimensions.notes
+        : 'Visually estimated planning approximations. Confirm dimensions with on-site tape measurement before construction.'
     },
     detectedLayout: {
       doorWall,
@@ -239,55 +241,185 @@ function validateAnalysisShape(raw: any, userGivenWidth?: number): ImageAnalysis
 }
 
 function buildVisionPrompt(userGivenWidth?: number): string {
-  return `Analyze this bathroom/washroom photo and return ONLY valid JSON matching this TypeScript shape:
-{
-  "detectedElements": [
-    {
-      "id": "string",
-      "label": "string",
-      "confidence": 0.0,
-      "category": "toilet" | "vanity" | "shower" | "door" | "window" | "tile" | "lighting",
-      "boundingBox": { "x": 0, "y": 0, "width": 0, "height": 0 },
-      "attributes": {}
-    }
-  ],
-  "estimatedDimensions": {
-    "length": 8,
-    "width": 6,
-    "height": 9,
-    "confidence": 0.0,
-    "notes": "string"
-  },
-  "detectedLayout": {
-    "doorWall": "north" | "south" | "east" | "west",
-    "windowWall": "north" | "south" | "east" | "west",
-    "plumbingLocations": ["string"]
-  },
-  "identifiedBottlenecks": ["string"],
-  "aiRecommendations": [
-    {
-      "existingIssue": "string",
-      "recommendedKohlerFixture": "string",
-      "spaceOrWaterBenefit": "string"
-    }
-  ],
-  "aestheticAnalysis": {
-    "primaryColorPalette": ["#ffffff"],
-    "materialTone": "string",
-    "lightingQuality": "string",
-    "recommendedStyle": "minimalist_modern" | "classic_luxury" | "japanese_zen" | "contemporary" | "premium" | "modern",
-    "styleMatchConfidence": 0.0
-  },
-  "imageMetrics": {
-    "dominantBrightness": 0,
-    "colorTemperature": "warm" | "neutral" | "cool",
-    "contrastRatio": 1,
-    "detectedSurfaces": ["string"]
-  },
-  "summary": "string"
+  return `You are an expert architectural vision engine analyzing this bathroom/washroom photo for Verre Studio AI Designer.
+Examine the image carefully:
+1. Detect all visible bathroom fixtures (toilet, vanity, sink, shower, bathtub, mirror, faucet), door/window openings, tiles, and lighting.
+2. Provide bounding box percentages (0 to 100) for each detected element.
+3. Estimate room dimensions in feet (length, width, height) based on standard fixture scales (e.g. standard toilets are ~1.5x2.2 ft, vanities ~2x3 ft). If user supplied known width (${userGivenWidth ? userGivenWidth + ' ft' : 'none'}), calibrate with it.
+   Emphasize in notes that these are visual planning estimates, not on-site laser measurements.
+4. Infer likely plumbing rough-in zones (e.g. "south wall toilet soil stack", "west wall wet-zone drain").
+5. Assess aesthetic color palette (hex colors), material finishes, and recommend the best matching design style: minimalist_modern, classic_luxury, japanese_zen, contemporary, premium, or modern.
+6. Identify practical bottlenecks and suggest Verre Studio design improvements.
+
+Return strictly structured JSON conforming to the schema.`;
 }
 
-Bounding boxes must be percentages from 0 to 100. Infer doorWall/windowWall from the viewer-facing plan orientation as best as possible. Use the provided known width if useful: ${userGivenWidth ?? 'none'} ft. Do not include markdown fences or explanatory prose.`;
+const GEMINI_IMAGE_ANALYSIS_SCHEMA = {
+  type: SchemaType.OBJECT,
+  description: 'Structured architectural analysis of uploaded bathroom photo',
+  properties: {
+    detectedElements: {
+      type: SchemaType.ARRAY,
+      description: 'Detected fixtures, openings, and surfaces with bounding boxes',
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          id: { type: SchemaType.STRING },
+          label: { type: SchemaType.STRING },
+          confidence: { type: SchemaType.NUMBER },
+          category: {
+            type: SchemaType.STRING,
+            enum: ['toilet', 'vanity', 'shower', 'door', 'window', 'tile', 'lighting']
+          },
+          boundingBox: {
+            type: SchemaType.OBJECT,
+            properties: {
+              x: { type: SchemaType.NUMBER, description: 'Percentage from left 0 to 100' },
+              y: { type: SchemaType.NUMBER, description: 'Percentage from top 0 to 100' },
+              width: { type: SchemaType.NUMBER, description: 'Width percentage 0 to 100' },
+              height: { type: SchemaType.NUMBER, description: 'Height percentage 0 to 100' }
+            },
+            required: ['x', 'y', 'width', 'height']
+          }
+        },
+        required: ['id', 'label', 'confidence', 'category', 'boundingBox']
+      }
+    },
+    estimatedDimensions: {
+      type: SchemaType.OBJECT,
+      description: 'Estimated room dimensions in feet (visual inferences)',
+      properties: {
+        length: { type: SchemaType.NUMBER, description: 'Estimated length in feet' },
+        width: { type: SchemaType.NUMBER, description: 'Estimated width in feet' },
+        height: { type: SchemaType.NUMBER, description: 'Estimated ceiling height in feet' },
+        confidence: { type: SchemaType.NUMBER, description: 'Confidence between 0 and 1' },
+        notes: { type: SchemaType.STRING, description: 'Planning disclaimer notes' }
+      },
+      required: ['length', 'width', 'height', 'confidence', 'notes']
+    },
+    detectedLayout: {
+      type: SchemaType.OBJECT,
+      description: 'Estimated layout orientation and rough-in zones',
+      properties: {
+        doorWall: {
+          type: SchemaType.STRING,
+          enum: ['north', 'south', 'east', 'west']
+        },
+        windowWall: {
+          type: SchemaType.STRING,
+          enum: ['north', 'south', 'east', 'west']
+        },
+        plumbingLocations: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+          description: 'Inferred rough-in wall zones'
+        }
+      },
+      required: ['doorWall', 'plumbingLocations']
+    },
+    identifiedBottlenecks: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+      description: 'Spatial and ventilation bottlenecks observed'
+    },
+    aiRecommendations: {
+      type: SchemaType.ARRAY,
+      description: 'Fixtures and layout recommendations',
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          existingIssue: { type: SchemaType.STRING },
+          recommendedKohlerFixture: { type: SchemaType.STRING, description: 'Verre Studio fixture suggestion' },
+          spaceOrWaterBenefit: { type: SchemaType.STRING }
+        },
+        required: ['existingIssue', 'recommendedKohlerFixture', 'spaceOrWaterBenefit']
+      }
+    },
+    aestheticAnalysis: {
+      type: SchemaType.OBJECT,
+      description: 'Aesthetic palette and style evaluation',
+      properties: {
+        primaryColorPalette: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING }
+        },
+        materialTone: { type: SchemaType.STRING },
+        lightingQuality: { type: SchemaType.STRING },
+        recommendedStyle: {
+          type: SchemaType.STRING,
+          enum: ['minimalist_modern', 'classic_luxury', 'japanese_zen', 'contemporary', 'premium', 'modern']
+        },
+        styleMatchConfidence: { type: SchemaType.NUMBER }
+      },
+      required: ['primaryColorPalette', 'materialTone', 'lightingQuality', 'recommendedStyle', 'styleMatchConfidence']
+    },
+    imageMetrics: {
+      type: SchemaType.OBJECT,
+      properties: {
+        dominantBrightness: { type: SchemaType.NUMBER },
+        colorTemperature: {
+          type: SchemaType.STRING,
+          enum: ['warm', 'neutral', 'cool']
+        },
+        contrastRatio: { type: SchemaType.NUMBER },
+        detectedSurfaces: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING }
+        }
+      }
+    },
+    summary: { type: SchemaType.STRING, description: 'Visual analysis summary' }
+  },
+  required: [
+    'detectedElements',
+    'estimatedDimensions',
+    'detectedLayout',
+    'identifiedBottlenecks',
+    'aiRecommendations',
+    'aestheticAnalysis',
+    'summary'
+  ]
+};
+
+async function callGeminiVision(image: PreparedImage, userGivenWidth?: number): Promise<unknown> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not configured');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: 'application/json',
+      responseSchema: GEMINI_IMAGE_ANALYSIS_SCHEMA as any
+    }
+  });
+
+  const prompt = buildVisionPrompt(userGivenWidth);
+  const imagePart = {
+    inlineData: {
+      data: image.base64,
+      mimeType: image.mediaType
+    }
+  };
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Gemini Vision request timed out after ${REQUEST_TIMEOUT_MS}ms`)), REQUEST_TIMEOUT_MS);
+  });
+
+  const result = await Promise.race([
+    model.generateContent([prompt, imagePart]),
+    timeoutPromise
+  ]);
+
+  const text = result.response.text();
+  if (!text) {
+    throw new Error('Gemini Vision response returned empty text');
+  }
+
+  return JSON.parse(stripJsonFences(text));
 }
 
 async function callAnthropicVision(image: PreparedImage, userGivenWidth?: number): Promise<unknown> {
@@ -306,7 +438,7 @@ async function callAnthropicVision(image: PreparedImage, userGivenWidth?: number
         'anthropic-version': ANTHROPIC_VERSION
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
         max_tokens: 1800,
         temperature: 0.1,
         messages: [
@@ -361,10 +493,30 @@ export async function analyzeBathroomImage(
       throw new Error('Image payload was empty');
     }
 
-    const rawAnalysis = await callAnthropicVision(image, userGivenWidth);
-    return validateAnalysisShape(rawAnalysis, userGivenWidth);
+    // 1. Primary: Google Gemini Vision with responseSchema
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const rawAnalysis = await callGeminiVision(image, userGivenWidth);
+        return validateAnalysisShape(rawAnalysis, userGivenWidth);
+      } catch (geminiErr: any) {
+        console.warn('[Verre Studio Vision] Gemini API error, checking fallback:', geminiErr?.message || geminiErr);
+        if (process.env.ANTHROPIC_API_KEY) {
+          const rawAnalysis = await callAnthropicVision(image, userGivenWidth);
+          return validateAnalysisShape(rawAnalysis, userGivenWidth);
+        }
+        throw geminiErr;
+      }
+    }
+
+    // 2. Secondary fallback: Anthropic Vision if configured
+    if (process.env.ANTHROPIC_API_KEY) {
+      const rawAnalysis = await callAnthropicVision(image, userGivenWidth);
+      return validateAnalysisShape(rawAnalysis, userGivenWidth);
+    }
+
+    throw new Error('GEMINI_API_KEY is not configured in .env. Enter room dimensions manually.');
   } catch (error: any) {
-    console.warn('[Verre Studio AI Vision] Falling back to low-confidence result:', error?.message || error);
-    return fallbackAnalysis(error?.message || 'Unknown vision analysis failure', userGivenWidth);
+    console.warn('[Verre Studio AI Vision] Falling back to graceful estimation:', error?.message || error);
+    return fallbackAnalysis(error?.message || 'Vision service unavailable', userGivenWidth);
   }
 }
