@@ -160,32 +160,6 @@ export function App() {
     });
   };
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const size = params.get('size');
-    const sharedStyle = params.get('style') as DesignStyle | null;
-    const sharedTier = params.get('tier');
-    const validStyles: DesignStyle[] = ['minimalist_modern', 'classic_luxury', 'japanese_zen', 'contemporary', 'premium', 'modern'];
-
-    if (size) {
-      const match = size.match(/^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/i);
-      if (match) {
-        const length = Math.max(5, Math.min(18, Number(match[1])));
-        const width = Math.max(4, Math.min(14, Number(match[2])));
-        setRoom({ ...room, length, width });
-      }
-    }
-
-    if (sharedStyle && validStyles.includes(sharedStyle)) {
-      setStyle(sharedStyle);
-    }
-
-    if (sharedTier === 'budget_saver' || sharedTier === 'luxury_upgrade' || sharedTier === 'optimal') {
-      setActiveBundleType(sharedTier);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const quotation = useMemo(() => {
     return activeBundle ? calculateQuotation({ ...activeBundle, products }, room, finishes) : null;
   }, [activeBundle, products, room, finishes]);

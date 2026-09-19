@@ -94,6 +94,21 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Live State Refs to eliminate stale-state closures during AI copilot mutation
+  const roomRef = useRef(room);
+  const budgetRef = useRef(budget);
+  const styleRef = useRef(style);
+  const finishesRef = useRef(finishes);
+  const productsRef = useRef(products);
+  const bundleRef = useRef(bundle);
+
+  useEffect(() => { roomRef.current = room; }, [room]);
+  useEffect(() => { budgetRef.current = budget; }, [budget]);
+  useEffect(() => { styleRef.current = style; }, [style]);
+  useEffect(() => { finishesRef.current = finishes; }, [finishes]);
+  useEffect(() => { productsRef.current = products; }, [products]);
+  useEffect(() => { bundleRef.current = bundle; }, [bundle]);
+
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -170,30 +185,47 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
 
     if (action.action === 'set_style') {
       const nextStyle = params.style as DesignStyle;
+      styleRef.current = nextStyle;
       onUpdateStyle(nextStyle);
-      onUpdateFinishes({
+      const nextFinishes = {
         ...styleFinishPresets[nextStyle],
         floor: params.floor || styleFinishPresets[nextStyle].floor,
         wall: params.wall || styleFinishPresets[nextStyle].wall
-      });
-      if (params.regenerate !== false) onTriggerRegenerate({ style: nextStyle });
+      };
+      finishesRef.current = nextFinishes;
+      onUpdateFinishes(nextFinishes);
+      if (params.regenerate !== false) {
+        onTriggerRegenerate({
+          style: nextStyle,
+          budget: budgetRef.current,
+          room: roomRef.current
+        });
+      }
       return;
     }
 
     if (action.action === 'set_budget') {
       const nextBudget = Number(params.budget);
+      budgetRef.current = nextBudget;
       onUpdateBudget(nextBudget);
-      if (params.regenerate !== false) onTriggerRegenerate({ budget: nextBudget });
+      if (params.regenerate !== false) {
+        onTriggerRegenerate({
+          budget: nextBudget,
+          style: styleRef.current,
+          room: roomRef.current
+        });
+      }
       return;
     }
 
     if (action.action === 'set_room_size') {
       const nextRoom = {
-        ...room,
+        ...roomRef.current,
         length: Number(params.length),
         width: Number(params.width),
-        height: params.height ? Number(params.height) : room.height
+        height: params.height ? Number(params.height) : roomRef.current.height
       };
+      roomRef.current = nextRoom;
       onUpdateRoom(nextRoom);
       if (typeof params.includeBathtub === 'boolean') {
         onSetIncludeBathtub?.(params.includeBathtub);
@@ -201,6 +233,8 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
       if (params.regenerate !== false) {
         onTriggerRegenerate({
           room: nextRoom,
+          budget: budgetRef.current,
+          style: styleRef.current,
           includeBathtub: typeof params.includeBathtub === 'boolean' ? params.includeBathtub : undefined
         });
       }
@@ -210,29 +244,43 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
     if (action.action === 'toggle_bathtub') {
       const includeBathtub = Boolean(params.enabled);
       onSetIncludeBathtub?.(includeBathtub);
-      let nextRoom = room;
+      let nextRoom = roomRef.current;
       if (params.enabled) {
         nextRoom = {
-          ...room,
-          length: Math.max(room.length, 9.5),
-          width: Math.max(room.width, 7.5)
+          ...roomRef.current,
+          length: Math.max(roomRef.current.length, 9.5),
+          width: Math.max(roomRef.current.width, 7.5)
         };
+        roomRef.current = nextRoom;
         onUpdateRoom(nextRoom);
       }
-      if (params.regenerate !== false) onTriggerRegenerate({ room: nextRoom, includeBathtub });
+      if (params.regenerate !== false) {
+        onTriggerRegenerate({
+          room: nextRoom,
+          budget: budgetRef.current,
+          style: styleRef.current,
+          includeBathtub
+        });
+      }
       return;
     }
 
     if (action.action === 'swap_tile') {
-      onUpdateFinishes({
-        ...finishes,
+      const nextFinishes = {
+        ...finishesRef.current,
         [params.surface]: params.tileId
-      });
+      };
+      finishesRef.current = nextFinishes;
+      onUpdateFinishes(nextFinishes);
       return;
     }
 
     if (action.action === 'regenerate') {
-      onTriggerRegenerate();
+      onTriggerRegenerate({
+        room: roomRef.current,
+        budget: budgetRef.current,
+        style: styleRef.current
+      });
       return;
     }
 
@@ -336,17 +384,17 @@ export const AiCopilot: React.FC<AiCopilotProps> = ({
     setIsTyping(true);
 
     try {
-      const response = await fetch('/api/copilot-action', {
+      const response = await fetch('/api/copilot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: query,
-          room,
-          budget,
-          style,
-          finishes,
-          bundleSummary: bundle
-            ? `${bundle.title}. Cost ₹${bundle.totalCost}. ${bundle.aiSummary}`
+          room: roomRef.current,
+          budget: budgetRef.current,
+          style: styleRef.current,
+          finishes: finishesRef.current,
+          bundleSummary: bundleRef.current
+            ? `${bundleRef.current.title}. Cost ₹${bundleRef.current.totalCost}. ${bundleRef.current.aiSummary}`
             : undefined
         })
       });

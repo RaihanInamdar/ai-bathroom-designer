@@ -1,4 +1,4 @@
-import { RoomConfig, WallOrientation, WallSegment } from '../../models/Room';
+import { RoomConfig, WallOrientation, WallSegment } from '../../types';
 
 export function calculateWallSegments(room: RoomConfig, finishId: string = 'ceramic_artisan_glazed'): WallSegment[] {
   const L = room.length;

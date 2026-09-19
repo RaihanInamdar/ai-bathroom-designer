@@ -1,4 +1,4 @@
-import { TileFinish } from '../models/Tile';
+import { TileFinish } from '../types';
 
 export const TILES_CATALOG: TileFinish[] = [
   // 1. MARBLE

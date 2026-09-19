@@ -11,6 +11,8 @@ npm run dev:all
 
 The Vite app runs on `http://localhost:5173` and proxies API calls to the Express server on `http://localhost:5000`.
 
+If port `5000` is already in use, stop the old server first. If you change `PORT` in `.env`, also update the Vite proxy target in `vite.config.ts`.
+
 ## Scripts
 
 ```bash
@@ -33,5 +35,4 @@ Without those keys, the app stays honest: image analysis returns a low-confidenc
 ## Notes
 
 - `server/data/products.json` is the single base product catalog; the frontend imports it and expands finish/style variants.
-- Generated AR/share links read `size`, `style`, and `tier` query parameters.
 - `node_modules` and `dist` are intentionally ignored so exported zips stay small.

@@ -12,13 +12,13 @@ import {
   RecommendationBundle,
   FeasibilityValidation,
   DesignScoreBreakdown,
-  WaterSavingsReport,
   OptimizationSearchMetrics,
   ModifyDesignRequest,
   ModifyDesignResponse,
   ProductExplainability
 } from '../../src/types/index.js';
 import { generateArchitecturalLayout } from '../../src/services/layoutEngine.js';
+import { calculateWaterSavings } from '../../src/services/waterSavings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,13 +131,65 @@ function checkSpatialCollisions(
 ): { hasCollision: boolean; rejectionReasons: string[] } {
   const reasons: string[] = [];
 
+  const fixtureBox = (p: PlacedProduct) => {
+    const rotated = p.rotation === 90 || p.rotation === 270;
+    const width = rotated ? p.depth : p.width;
+    const depth = rotated ? p.width : p.depth;
+
+    return {
+      left: p.x - width / 2,
+      right: p.x + width / 2,
+      top: p.y - depth / 2,
+      bottom: p.y + depth / 2
+    };
+  };
+
+  const openingBox = (
+    opening: { wall: 'north' | 'south' | 'east' | 'west'; offset: number; width: number },
+    depth: number
+  ) => {
+    if (opening.wall === 'north') {
+      return { left: opening.offset, right: opening.offset + opening.width, top: 0, bottom: depth };
+    }
+
+    if (opening.wall === 'south') {
+      return { left: opening.offset, right: opening.offset + opening.width, top: room.width - depth, bottom: room.width };
+    }
+
+    if (opening.wall === 'west') {
+      return { left: 0, right: depth, top: opening.offset, bottom: opening.offset + opening.width };
+    }
+
+    return { left: room.length - depth, right: room.length, top: opening.offset, bottom: opening.offset + opening.width };
+  };
+
+  const boxesOverlap = (
+    a: ReturnType<typeof fixtureBox>,
+    b: ReturnType<typeof openingBox>
+  ) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
   // 1. Boundary overlap check
   for (const p of placed) {
-    const rotated = p.rotation === 90 || p.rotation === 270;
-    const halfW = (rotated ? p.depth : p.width) / 2;
-    const halfD = (rotated ? p.width : p.depth) / 2;
-    if (p.x - halfW < 0 || p.x + halfW > room.length || p.y - halfD < 0 || p.y + halfD > room.width) {
+    const box = fixtureBox(p);
+    if (box.left < 0 || box.right > room.length || box.top < 0 || box.bottom > room.width) {
       reasons.push(`${p.name} extends outside room boundary (${p.x.toFixed(1)}, ${p.y.toFixed(1)}).`);
+    }
+  }
+
+  const checkedOpeningProducts = placed.filter(
+    p => p.mountType !== 'countertop' && p.mountType !== 'wall' && p.category !== 'faucet' && p.category !== 'mirror'
+  );
+  const doorZone = openingBox(room.door, room.door.width || 2.5);
+  const windowZone = room.window ? openingBox(room.window, 0.9) : null;
+
+  for (const p of checkedOpeningProducts) {
+    const box = fixtureBox(p);
+    if (boxesOverlap(box, doorZone)) {
+      reasons.push(`${p.name} overlaps the ${room.door.wall} door exclusion zone.`);
+    }
+
+    if (windowZone && room.window && boxesOverlap(box, windowZone)) {
+      reasons.push(`${p.name} overlaps the ${room.window.wall} window exclusion zone.`);
     }
   }
 
@@ -777,47 +829,6 @@ function calculateDesignScore(
   };
 }
 
-// Calculate Water & Resource Savings
-function calculateWaterSavings(householdMembers: number = 4): WaterSavingsReport {
-  const toiletBaseline = householdMembers * 4 * 13 * 365;
-  const faucetBaseline = householdMembers * 12 * 2.2 * 365;
-  const showerBaseline = householdMembers * 15 * 2.5 * 365;
-  const annualBaselineLiters = Math.round(toiletBaseline + faucetBaseline + showerBaseline);
-
-  const toiletKohler = householdMembers * 4 * 3.8 * 365;
-  const faucetKohler = householdMembers * 12 * 1.2 * 365;
-  const showerKohler = householdMembers * 15 * 1.75 * 365;
-  const annualKohlerLiters = Math.round(toiletKohler + faucetKohler + showerKohler);
-
-  const toiletSavedLiters = toiletBaseline - toiletKohler;
-  const heatedFixtureSavedLiters = (faucetBaseline - faucetKohler) + (showerBaseline - showerKohler);
-  const annualSavedLiters = toiletSavedLiters + heatedFixtureSavedLiters;
-  const percentReduction = Math.round((annualSavedLiters / annualBaselineLiters) * 100);
-  const waterTariffInrPerLiter = 0.02;
-  const heatedWaterEnergyInrPerLiter = 0.08;
-  const annualBillSavingsInr = Math.round(
-    toiletSavedLiters * waterTariffInrPerLiter +
-    heatedFixtureSavedLiters * (waterTariffInrPerLiter + heatedWaterEnergyInrPerLiter)
-  );
-  const tenYearBillSavingsInr = annualBillSavingsInr * 10;
-  const co2OffsetKg = Math.round(annualSavedLiters * 0.003);
-
-  return {
-    annualBaselineLiters,
-    annualKohlerLiters,
-    annualSavedLiters,
-    percentReduction,
-    annualBillSavingsInr,
-    tenYearBillSavingsInr,
-    co2OffsetKg,
-    assumptions: [
-      `Assumes a ${householdMembers}-person household (4 flushes/person/day, 8 min average shower).`,
-      `Baseline assumes dated 13L single-flush gravity commode & un-aerated 2.2 gpm brass fixtures.`,
-      `Verre Studio design uses Class Five 3.8L dual-flush and Katalyst 1.75 gpm air-induction rainhead.`,
-      `Savings use a conservative ₹${waterTariffInrPerLiter.toFixed(2)}/L water tariff plus ₹${heatedWaterEnergyInrPerLiter.toFixed(2)}/L heating energy only for faucet and shower usage.`
-    ]
-  };
-}
 
 export function generateRecommendations(req: RecommendationRequest): RecommendationResponse {
   const catalog = getProductsCatalog();
@@ -837,7 +848,7 @@ export function generateRecommendations(req: RecommendationRequest): Recommendat
     budgetUtilizationPct: Math.round((optCost / req.budget) * 100),
     feasibility: validateFeasibility(optResult.placedProducts, req.room, req.budget, req.style),
     designScore: calculateDesignScore(optResult.placedProducts, req.room, req.budget, req.style),
-    waterSavings: calculateWaterSavings(4),
+    waterSavings: calculateWaterSavings(optResult.placedProducts),
     searchMetrics: optResult.metrics,
     aiSummary: `Explored ${optResult.metrics.combinationsExplored} product permutations across ${optResult.metrics.layoutsEvaluated} spatial layouts. Filtered ${optResult.metrics.invalidLayoutsRejected} invalid configurations to achieve ${optResult.metrics.paretoOptimalityScore}/100 Pareto optimality.`
   };
@@ -856,7 +867,7 @@ export function generateRecommendations(req: RecommendationRequest): Recommendat
     budgetUtilizationPct: Math.round((cheapCost / req.budget) * 100),
     feasibility: validateFeasibility(cheapResult.placedProducts, req.room, req.budget, req.style),
     designScore: calculateDesignScore(cheapResult.placedProducts, req.room, req.budget, req.style),
-    waterSavings: calculateWaterSavings(4),
+    waterSavings: calculateWaterSavings(cheapResult.placedProducts),
     searchMetrics: cheapResult.metrics,
     aiSummary: `Value-engineered bundle preserving ₹${(req.budget - cheapCost).toLocaleString('en-IN')} in surplus with 100% clearance verification.`
   };
@@ -875,7 +886,7 @@ export function generateRecommendations(req: RecommendationRequest): Recommendat
     budgetUtilizationPct: Math.round((luxCost / req.budget) * 100),
     feasibility: validateFeasibility(luxResult.placedProducts, req.room, req.budget * 1.5, req.style),
     designScore: calculateDesignScore(luxResult.placedProducts, req.room, req.budget * 1.5, req.style),
-    waterSavings: calculateWaterSavings(4),
+    waterSavings: calculateWaterSavings(luxResult.placedProducts),
     searchMetrics: luxResult.metrics,
     aiSummary: `Flagship intelligent wellness tier featuring Verre Studio Numi 2.0 bidet, Anthem digital controls, and organic soaking stone.`
   };
@@ -977,7 +988,7 @@ export function modifyDesignWithPrompt(req: ModifyDesignRequest): ModifyDesignRe
 
   const feasibility = validateFeasibility(modifiedProducts, req.room, req.budget, req.style);
   const designScore = calculateDesignScore(modifiedProducts, req.room, req.budget, req.style);
-  const waterSavings = calculateWaterSavings(4);
+  const waterSavings = calculateWaterSavings(modifiedProducts);
 
   const afterScores = {
     overall: designScore.overallScore,

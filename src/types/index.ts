@@ -1,3 +1,5 @@
+export type WallOrientation = 'north' | 'south' | 'east' | 'west';
+
 export type DesignStyle = 
   | 'minimalist_modern' 
   | 'classic_luxury' 
@@ -75,7 +77,7 @@ export interface PlacedProduct extends Product {
   x: number; // center ft in room
   y: number; // center ft in room
   rotation: number; // 0, 90, 180, 270
-  wallAttached: 'north' | 'south' | 'east' | 'west' | 'none';
+  wallAttached: WallOrientation | 'none';
   score: number;
   reason: string;
   explainability?: ProductExplainability;
@@ -89,16 +91,18 @@ export interface PlacedProduct extends Product {
 }
 
 export interface WallOpening {
-  wall: 'north' | 'south' | 'east' | 'west';
+  wall: WallOrientation;
   offset: number; // ft
   width: number;  // ft
+  height?: number;
+  sillHeight?: number;
   swing?: 'inward' | 'outward'; // door swing direction
 }
 
 export interface PlumbingPoint {
   id?: string;
   type: 'water_inlet' | 'waste_drain' | 'shower_drain';
-  wall?: 'north' | 'south' | 'east' | 'west';
+  wall?: WallOrientation;
   x: number;
   y: number;
 }
@@ -111,6 +115,103 @@ export interface RoomConfig {
   window?: WallOpening;
   plumbingPoints?: PlumbingPoint[];
   name?: string;
+}
+
+export interface WallSegment {
+  id: string;
+  wall: WallOrientation;
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  length: number;
+  height: number;
+  grossArea: number;
+  netArea: number;
+  finishId: string;
+}
+
+export interface Measurements {
+  floorArea: number;
+  ceilingArea: number;
+  perimeter: number;
+  grossWallArea: number;
+  netWallArea: number;
+  doorArea: number;
+  windowArea: number;
+}
+
+export function calculateMeasurements(room: RoomConfig): Measurements {
+  const floorArea = Number((room.length * room.width).toFixed(2));
+  const ceilingArea = floorArea;
+  const perimeter = Number((2 * (room.length + room.width)).toFixed(2));
+  const grossWallArea = Number((perimeter * room.height).toFixed(2));
+  const doorWidth = room.door?.width || 2.5;
+  const doorHeight = room.door?.height || 7.0;
+  const doorArea = Number((doorWidth * doorHeight).toFixed(2));
+  const windowWidth = room.window?.width || 0;
+  const windowHeight = room.window?.height || (room.window ? 3.0 : 0);
+  const windowArea = Number((windowWidth * windowHeight).toFixed(2));
+  const netWallArea = Number(Math.max(0, grossWallArea - doorArea - windowArea).toFixed(2));
+
+  return {
+    floorArea,
+    ceilingArea,
+    perimeter,
+    grossWallArea,
+    netWallArea,
+    doorArea,
+    windowArea
+  };
+}
+
+export type TileType =
+  | 'marble'
+  | 'granite'
+  | 'ceramic'
+  | 'wooden'
+  | 'matte'
+  | 'glossy'
+  | 'stone'
+  | 'mosaic'
+  | 'concrete'
+  | 'vintage'
+  | 'designer';
+
+export interface TileFinish {
+  id: string;
+  name: string;
+  type: TileType;
+  category: 'floor' | 'wall' | 'both';
+  ratePerSqFt: number;
+  color: string;
+  textureUrl?: string;
+  description: string;
+  roughness: number;
+  metalness: number;
+  tileSizeInches: { width: number; height: number };
+  origin?: string;
+}
+
+export interface SurfaceFinishes {
+  floor: string;
+  wall: string;
+  ceiling?: string;
+}
+
+export interface QuotationBreakdown {
+  wallTilesCost: number;
+  floorTilesCost: number;
+  sanitaryProductsCost: number;
+  accessoriesCost: number;
+  labourCost: number;
+  transportCost: number;
+  subtotalBeforeTax: number;
+  gstRatePct: number;
+  gstAmount: number;
+  finalCost: number;
+  fixtureSubtotal?: number;
+  surfaceMaterialCost?: number;
+  installationCost?: number;
+  grandTotal?: number;
 }
 
 export interface FeasibilityValidation {
@@ -147,11 +248,11 @@ export interface DesignScoreBreakdown {
 }
 
 export interface WaterSavingsReport {
-  annualBaselineLiters: number; // e.g. 68000
-  annualKohlerLiters: number;   // e.g. 39500
-  annualSavedLiters: number;    // e.g. 28500
-  percentReduction: number;     // e.g. 42%
-  annualBillSavingsInr: number; // e.g. 4275
+  annualBaselineLiters: number;
+  annualDesignLiters: number;
+  annualSavedLiters: number;
+  percentReduction: number;
+  annualBillSavingsInr: number;
   tenYearBillSavingsInr: number;
   co2OffsetKg: number;
   assumptions: string[];
@@ -255,14 +356,14 @@ export interface ImageAnalysisResult {
     notes: string;
   };
   detectedLayout: {
-    doorWall: 'north' | 'south' | 'east' | 'west';
-    windowWall?: 'north' | 'south' | 'east' | 'west';
+    doorWall: WallOrientation;
+    windowWall?: WallOrientation;
     plumbingLocations: string[];
   };
   identifiedBottlenecks: string[];
   aiRecommendations: {
     existingIssue: string;
-    recommendedKohlerFixture: string;
+    recommendedFixture: string;
     spaceOrWaterBenefit: string;
   }[];
   aestheticAnalysis: {
@@ -279,4 +380,43 @@ export interface ImageAnalysisResult {
     detectedSurfaces: string[];
   };
   summary: string;
+}
+
+export interface AIDetectionResult {
+  detectedElements: DetectedElement[];
+  estimatedDimensions: ImageAnalysisResult['estimatedDimensions'];
+  detectedLayout: ImageAnalysisResult['detectedLayout'];
+  detectedFinishes?: {
+    floorType: string;
+    wallTiles: string;
+    colorPalette: string[];
+  };
+  summary: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  room: RoomConfig;
+  walls: WallSegment[];
+  floor: {
+    finishId: string;
+    area: number;
+  };
+  ceiling: {
+    finishId: string;
+    area: number;
+    height: number;
+  };
+  products: PlacedProduct[];
+  measurements: Measurements;
+  quotation: QuotationBreakdown;
+  aiDetection: AIDetectionResult | null;
+  recommendations: RecommendationResponse | null;
+  style: DesignStyle;
+  budget: number;
+  activeArchetype: LayoutArchetype;
+  finishes: SurfaceFinishes;
 }

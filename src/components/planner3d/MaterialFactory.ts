@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { DesignStyle } from '../../types';
 import { getTileById } from '../../data/tiles';
-import { TileFinish, TileType } from '../../models/Tile';
+import { TileFinish, TileType } from '../../types';
 
 export type FloorFinish = 
   | 'carrara_marble' 

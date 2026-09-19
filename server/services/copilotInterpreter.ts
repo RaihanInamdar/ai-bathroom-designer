@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { DesignStyle, RoomConfig, Product } from '../../src/types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -173,7 +173,7 @@ function cleanNumber(value: unknown, fallback: number, min: number, max: number)
   return Number(Math.max(min, Math.min(max, numberValue)).toFixed(2));
 }
 
-function validateCopilotAction(raw: any): CopilotActionResult {
+export function validateCopilotAction(raw: any): CopilotActionResult {
   if (!raw || typeof raw !== 'object') {
     throw new Error('Model returned a non-object response');
   }
@@ -299,7 +299,7 @@ function validateCopilotAction(raw: any): CopilotActionResult {
  * Intelligent Free Local NLP & Catalog Knowledge Engine.
  * Runs 100% offline with zero external API dependencies and zero cost.
  */
-function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotActionResult {
+export function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotActionResult {
   const msg = request.message.toLowerCase().trim();
   const catalog = getCatalogProducts();
 
@@ -700,41 +700,339 @@ function interpretWithLocalEngine(request: CopilotInterpreterRequest): CopilotAc
   };
 }
 
-/**
- * Interprets a natural language copilot request.
- * Priority:
- * 1. Google Gemini API (Free tier: gemini-1.5-flash) via @google/generative-ai
- * 2. Anthropic API if configured
- * 3. Intelligent Free Local Catalog & NLP Rule Engine (100% offline, zero config, zero errors)
- */
+const COPILOT_FUNCTION_DECLARATIONS = [
+  {
+    name: 'set_room_size',
+    description: 'Update the bathroom dimensions in feet (length, width, optional height) and optionally recalculate layout.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        length: { type: SchemaType.NUMBER, description: 'Length of room in feet (e.g. 10)' },
+        width: { type: SchemaType.NUMBER, description: 'Width of room in feet (e.g. 8)' },
+        height: { type: SchemaType.NUMBER, description: 'Ceiling height in feet (e.g. 9)' },
+        includeBathtub: { type: SchemaType.BOOLEAN, description: 'Whether to include a bathtub' },
+        regenerate: { type: SchemaType.BOOLEAN, description: 'Whether to recalculate layout immediately' }
+      },
+      required: ['length', 'width']
+    }
+  },
+  {
+    name: 'set_budget',
+    description: 'Set or update the target bathroom budget in INR.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        budget: { type: SchemaType.NUMBER, description: 'Target budget in INR (positive number)' },
+        regenerate: { type: SchemaType.BOOLEAN, description: 'Recalculate layout for the new budget' }
+      },
+      required: ['budget']
+    }
+  },
+  {
+    name: 'set_style',
+    description: 'Change the design aesthetic theme.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        style: {
+          type: SchemaType.STRING,
+          enum: ['minimalist_modern', 'classic_luxury', 'japanese_zen', 'contemporary', 'premium', 'modern'],
+          description: 'The target style'
+        },
+        floorTile: { type: SchemaType.STRING, description: 'Optional specific floor tile ID' },
+        wallTile: { type: SchemaType.STRING, description: 'Optional specific wall tile ID' },
+        regenerate: { type: SchemaType.BOOLEAN, description: 'Regenerate fixtures for this style' }
+      },
+      required: ['style']
+    }
+  },
+  {
+    name: 'swap_tile',
+    description: 'Change floor or wall surface tile finish.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        surface: { type: SchemaType.STRING, enum: ['floor', 'wall'], description: 'Surface to change' },
+        tileId: { type: SchemaType.STRING, description: 'Tile material ID' }
+      },
+      required: ['surface', 'tileId']
+    }
+  },
+  {
+    name: 'add_fixture',
+    description: 'Add a new plumbing or sanitary fixture to the bathroom layout.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        category: {
+          type: SchemaType.STRING,
+          enum: ['bathtub', 'vanity', 'shower', 'smart_toilet', 'toilet', 'mirror', 'faucet', 'accessory'],
+          description: 'Fixture category to add'
+        }
+      },
+      required: ['category']
+    }
+  },
+  {
+    name: 'remove_fixture',
+    description: 'Remove an existing fixture from the bathroom layout.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        category: {
+          type: SchemaType.STRING,
+          enum: ['bathtub', 'vanity', 'shower', 'smart_toilet', 'toilet', 'mirror', 'faucet', 'accessory'],
+          description: 'Fixture category to remove'
+        }
+      },
+      required: ['category']
+    }
+  },
+  {
+    name: 'toggle_feature',
+    description: 'Toggle visual studio features (water effect, clearance zones, 3D dimensions/rulers, ceiling, cutaway mode).',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        feature: {
+          type: SchemaType.STRING,
+          enum: ['water', 'clearance', 'dimensions', 'ceiling', 'cutaway'],
+          description: 'Feature to toggle'
+        },
+        enabled: { type: SchemaType.BOOLEAN, description: 'Explicit true/false or omit to toggle' }
+      },
+      required: ['feature']
+    }
+  },
+  {
+    name: 'regenerate',
+    description: 'Trigger a fresh recalculation of the spatial layout.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        reason: { type: SchemaType.STRING, description: 'Why regeneration was requested' }
+      }
+    }
+  },
+  {
+    name: 'explain_or_reply',
+    description: 'Answer questions, provide design advice, explain plumbing clearances, or suggest products without changing state.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        assistantReply: { type: SchemaType.STRING, description: 'Clear, helpful answer to the user' },
+        topic: { type: SchemaType.STRING, description: 'Topic discussed' }
+      },
+      required: ['assistantReply']
+    }
+  }
+];
+
+function validateAndSanitizeToolCall(
+  name: string,
+  args: Record<string, any>,
+  current: CopilotInterpreterRequest,
+  assistantReplyFromModel?: string
+): CopilotActionResult {
+  switch (name) {
+    case 'set_room_size': {
+      const rawLength = Number(args.length);
+      const rawWidth = Number(args.width);
+      const length = Number((Math.max(4.0, Math.min(25.0, Number.isFinite(rawLength) ? rawLength : current.room.length))).toFixed(1));
+      const width = Number((Math.max(4.0, Math.min(20.0, Number.isFinite(rawWidth) ? rawWidth : current.room.width))).toFixed(1));
+      const rawHeight = Number(args.height);
+      const height = Number.isFinite(rawHeight) ? Number((Math.max(7.5, Math.min(14.0, rawHeight))).toFixed(1)) : current.room.height;
+      const includeBathtub = typeof args.includeBathtub === 'boolean' ? args.includeBathtub : undefined;
+      const regenerate = args.regenerate !== false;
+
+      const reply = assistantReplyFromModel ||
+        `Updated room envelope to ${length}' × ${width}' (${(length * width).toFixed(0)} sq.ft)${regenerate ? ' and regenerated spatial layout' : ''}.`;
+
+      return {
+        action: 'set_room_size',
+        params: { length, width, height, includeBathtub, regenerate },
+        assistantReply: reply
+      };
+    }
+
+    case 'set_budget': {
+      const rawBudget = Number(args.budget);
+      const budget = Math.max(20000, Math.min(1000000, Math.round(Number.isFinite(rawBudget) ? rawBudget : current.budget)));
+      const regenerate = args.regenerate !== false;
+
+      const reply = assistantReplyFromModel ||
+        `Adjusted target budget to ₹${budget.toLocaleString('en-IN')}${regenerate ? ' and recalibrated fixture selections' : ''}.`;
+
+      return {
+        action: 'set_budget',
+        params: { budget, regenerate },
+        assistantReply: reply
+      };
+    }
+
+    case 'set_style': {
+      const style = ALLOWED_STYLES.includes(args.style) ? args.style : current.style;
+      const floorTile = typeof args.floorTile === 'string' && TILE_IDS.includes(args.floorTile) ? args.floorTile : undefined;
+      const wallTile = typeof args.wallTile === 'string' && TILE_IDS.includes(args.wallTile) ? args.wallTile : undefined;
+      const regenerate = args.regenerate !== false;
+
+      const styleLabel = style.replace('_', ' ');
+      const reply = assistantReplyFromModel ||
+        `Switched design aesthetic to ${styleLabel.toUpperCase()}${regenerate ? ' and regenerated package fixtures' : ''}.`;
+
+      return {
+        action: 'set_style',
+        params: { style, floor: floorTile, wall: wallTile, regenerate },
+        assistantReply: reply
+      };
+    }
+
+    case 'swap_tile': {
+      const surface = args.surface === 'wall' ? 'wall' : 'floor';
+      const tileId = TILE_IDS.includes(args.tileId) ? args.tileId : (surface === 'floor' ? 'marble_carrara' : 'ceramic_artisan_glazed');
+
+      const reply = assistantReplyFromModel || `Applied ${tileId.replace(/_/g, ' ')} finish to the ${surface}.`;
+      return {
+        action: 'swap_tile',
+        params: { surface, tileId },
+        assistantReply: reply
+      };
+    }
+
+    case 'add_fixture': {
+      const category = ['bathtub', 'vanity', 'shower', 'smart_toilet', 'toilet', 'mirror', 'faucet', 'accessory'].includes(args.category)
+        ? args.category
+        : 'vanity';
+
+      const reply = assistantReplyFromModel || `Added ${category.replace('_', ' ')} to the layout.`;
+      return {
+        action: 'add_fixture',
+        params: { category },
+        assistantReply: reply
+      };
+    }
+
+    case 'remove_fixture': {
+      const category = ['bathtub', 'vanity', 'shower', 'smart_toilet', 'toilet', 'mirror', 'faucet', 'accessory'].includes(args.category)
+        ? args.category
+        : 'toilet';
+
+      const reply = assistantReplyFromModel || `Removed ${category.replace('_', ' ')} from the layout.`;
+      return {
+        action: 'remove_fixture',
+        params: { category },
+        assistantReply: reply
+      };
+    }
+
+    case 'toggle_feature': {
+      const feature = ['water', 'clearance', 'dimensions', 'ceiling', 'cutaway'].includes(args.feature)
+        ? args.feature
+        : 'water';
+      const enabled = typeof args.enabled === 'boolean' ? args.enabled : undefined;
+
+      const reply = assistantReplyFromModel || `Toggled ${feature} display.`;
+      return {
+        action: 'toggle_feature',
+        params: { feature, enabled },
+        assistantReply: reply
+      };
+    }
+
+    case 'regenerate': {
+      return {
+        action: 'regenerate',
+        params: { reason: typeof args.reason === 'string' ? args.reason : 'User requested' },
+        assistantReply: assistantReplyFromModel || 'Regenerating optimized architectural layout based on your current constraints.'
+      };
+    }
+
+    case 'explain_or_reply':
+    default: {
+      const reply = typeof args.assistantReply === 'string'
+        ? args.assistantReply
+        : (assistantReplyFromModel || `I am ready to help you customize your bathroom layout, room dimensions, budget, or theme.`);
+      return {
+        action: 'explain',
+        params: { topic: typeof args.topic === 'string' ? args.topic : 'general' },
+        assistantReply: reply
+      };
+    }
+  }
+}
+
+async function interpretWithGeminiTools(request: CopilotInterpreterRequest): Promise<CopilotActionResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not configured');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+    tools: [
+      {
+        functionDeclarations: COPILOT_FUNCTION_DECLARATIONS as any
+      }
+    ],
+    generationConfig: {
+      temperature: 0.1
+    }
+  });
+
+  const systemInstruction = `You are the Verre Studio Spatial Copilot, an AI architectural assistant for a luxury 2D CAD and 3D bathroom design application.
+Current bathroom state:
+- Room size: ${request.room.length}' (L) × ${request.room.width}' (W) × ${request.room.height}' (H)
+- Budget: ₹${request.budget.toLocaleString('en-IN')}
+- Design style: ${request.style}
+- Surface finishes: Floor: ${request.finishes.floor}, Wall: ${request.finishes.wall}
+- Current package summary: ${request.bundleSummary || 'Standard layout'}
+
+Your mission is to map the user's natural language request to the appropriate function call:
+- "Expand room to 10x8" or "Make room 12 by 9" -> call set_room_size({ length: 10, width: 8, regenerate: true })
+- "Change style to Japanese Zen" or "Switch to Luxury" -> call set_style({ style: 'japanese_zen', regenerate: true })
+- "Set budget to 150000" or "Budget under 85000" -> call set_budget({ budget: 150000, regenerate: true })
+- "Add bathtub" or "Add soaking tub" -> call add_fixture({ category: 'bathtub' })
+- "Remove toilet" -> call remove_fixture({ category: 'toilet' })
+- "Turn off water effect" -> call toggle_feature({ feature: 'water', enabled: false })
+- "Regenerate layout" -> call regenerate({ reason: 'user request' })
+- For advice, clearance inquiries, product suggestions, or greetings -> call explain_or_reply with a helpful, friendly message.`;
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`Gemini Copilot request timed out after ${REQUEST_TIMEOUT_MS}ms`)), REQUEST_TIMEOUT_MS)
+  );
+
+  const result = await Promise.race([
+    model.generateContent([systemInstruction, `User message: ${request.message}`]),
+    timeoutPromise
+  ]);
+
+  const calls = result.response.functionCalls();
+  if (calls && calls.length > 0) {
+    const firstCall = calls[0];
+    return validateAndSanitizeToolCall(firstCall.name, firstCall.args || {}, request, result.response.text());
+  }
+
+  const replyText = result.response.text();
+  if (replyText) {
+    return validateAndSanitizeToolCall('explain_or_reply', { assistantReply: replyText }, request);
+  }
+
+  throw new Error('Gemini did not return any function call or reply text');
+}
+
 export async function interpretCopilotRequest(
   request: CopilotInterpreterRequest
 ): Promise<CopilotActionResult> {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
-  // 1. Try Google Gemini (Free Generative AI Library)
+  // 1. Try Google Gemini Real Tool / Function Calling
   if (geminiApiKey) {
     try {
-      const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const model = genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json'
-        }
-      });
-
-      const prompt = buildPrompt(request);
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
-
-      if (responseText) {
-        const parsed = JSON.parse(stripJsonFences(responseText));
-        return validateCopilotAction(parsed);
-      }
+      return await interpretWithGeminiTools(request);
     } catch (geminiError: any) {
-      console.warn('Gemini API request failed, using intelligent local engine:', geminiError?.message || geminiError);
+      console.warn('Gemini API function-calling failed, using intelligent local engine:', geminiError?.message || geminiError);
     }
   }
 

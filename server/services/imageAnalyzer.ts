@@ -44,7 +44,7 @@ function fallbackAnalysis(reason: string, userGivenWidth?: number): ImageAnalysi
     aiRecommendations: [
       {
         existingIssue: 'Automatic visual inspection unavailable or API key not configured.',
-        recommendedKohlerFixture: 'Select preferred Verre Studio fixtures manually from the catalog.',
+        recommendedFixture: 'Select preferred Verre Studio fixtures manually from the catalog.',
         spaceOrWaterBenefit: 'Use the 2D CAD and 3D Studio tabs to configure your spatial clearances.'
       }
     ],
@@ -209,7 +209,7 @@ function validateAnalysisShape(raw: any, userGivenWidth?: number): ImageAnalysis
           .slice(0, 6)
           .map((item: any) => ({
             existingIssue: typeof item.existingIssue === 'string' ? item.existingIssue : 'Observed bathroom issue',
-            recommendedKohlerFixture: typeof item.recommendedKohlerFixture === 'string' ? item.recommendedKohlerFixture : 'Verre Studio fixture recommendation',
+            recommendedFixture: typeof item.recommendedFixture === 'string' ? item.recommendedFixture : 'Verre Studio fixture recommendation',
             spaceOrWaterBenefit: typeof item.spaceOrWaterBenefit === 'string' ? item.spaceOrWaterBenefit : 'Improves space planning or water efficiency.'
           }))
       : [],
@@ -329,10 +329,10 @@ const GEMINI_IMAGE_ANALYSIS_SCHEMA = {
         type: SchemaType.OBJECT,
         properties: {
           existingIssue: { type: SchemaType.STRING },
-          recommendedKohlerFixture: { type: SchemaType.STRING, description: 'Verre Studio fixture suggestion' },
+          recommendedFixture: { type: SchemaType.STRING, description: 'Verre Studio fixture suggestion' },
           spaceOrWaterBenefit: { type: SchemaType.STRING }
         },
-        required: ['existingIssue', 'recommendedKohlerFixture', 'spaceOrWaterBenefit']
+        required: ['existingIssue', 'recommendedFixture', 'spaceOrWaterBenefit']
       }
     },
     aestheticAnalysis: {

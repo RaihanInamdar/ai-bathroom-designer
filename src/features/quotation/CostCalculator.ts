@@ -1,7 +1,4 @@
-import { PlacedProduct } from '../../models/Product';
-import { Measurements } from '../../models/Room';
-import { TileFinish } from '../../models/Tile';
-import { QuotationBreakdown } from '../../models/Bathroom';
+import { Measurements, PlacedProduct, QuotationBreakdown, TileFinish } from '../../types';
 import { calculateGST, GST_RATE_PCT } from './GST';
 
 export interface CostCalculationInput {

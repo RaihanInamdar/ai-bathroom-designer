@@ -17,35 +17,78 @@ export interface LayoutFixtures {
   bathtub?: Product;
 }
 
-// Helper to determine explainability for a fixture
-function createExplainability(
+function findFixture(
+  products: Product[],
+  catalog: Product[],
+  matcher: (product: Product) => boolean
+): Product | undefined {
+  return products.find(matcher) || catalog.find(matcher);
+}
+
+export function pickLayoutFixtures(products: Product[], catalog: Product[]): LayoutFixtures {
+  const toilet = findFixture(
+    products,
+    catalog,
+    (product) => product.category === 'smart_toilet' || product.category === 'toilet'
+  );
+  const vanity = findFixture(products, catalog, (product) => product.category === 'vanity');
+  const faucet = findFixture(products, catalog, (product) => product.category === 'faucet');
+
+  if (!toilet || !vanity || !faucet) {
+    throw new Error('Catalog is missing required toilet, vanity, or faucet fixtures');
+  }
+
+  return {
+    toilet,
+    vanity,
+    faucet,
+    shower: findFixture(products, catalog, (product) => product.category === 'shower'),
+    mirror: findFixture(products, catalog, (product) => product.category === 'mirror'),
+    accessory: findFixture(products, catalog, (product) => product.category === 'accessory'),
+    bathtub: findFixture(products, catalog, (product) => product.category === 'bathtub')
+  };
+}
+
+function clampScore(value: number): number {
+  return Math.round(Math.max(40, Math.min(99, value)));
+}
+
+export function buildProductExplainability(
   product: Product,
-  x: number,
-  y: number,
-  room: RoomConfig,
   style: DesignStyle,
   frontClearanceAvailable: number
 ): ProductExplainability {
   const isStyleMatch = product.styles.includes(style);
-  const styleName = style.replace('_', ' ').toUpperCase();
+  const styleName = style.replace('_', ' ');
+  const requiredFrontClearance = product.clearance?.front ?? 2.5;
+  const sideClearance = product.clearance?.sides ?? 0.5;
+  const clearanceVerified = frontClearanceAvailable >= Math.min(requiredFrontClearance, 2.1);
+  const spaceScore = clampScore((frontClearanceAvailable / Math.max(requiredFrontClearance, 0.5)) * 90);
+  const budgetScore = clampScore(100 - product.price / 8000);
+  const styleScore = isStyleMatch ? 96 : 72;
+  const flowBonus = product.flowRateGpm && product.flowRateGpm <= 1.5 ? 8 : 0;
+  const flushBonus = product.flushVolumeLiters && product.flushVolumeLiters <= 4 ? 8 : 0;
+  const waterScore = clampScore((product.waterSavingRating || 3) * 16 + flowBonus + flushBonus);
 
   return {
-    spaceScore: frontClearanceAvailable >= 2.5 ? 98 : 92,
-    spaceReason: `${product.width}' x ${product.depth}' footprint fits with ${frontClearanceAvailable.toFixed(1)} ft front clearance buffer.`,
-    budgetScore: 94,
-    budgetReason: `Delivers premium Verre Studio materials within target allocation.`,
-    styleScore: isStyleMatch ? 97 : 88,
+    spaceScore,
+    spaceReason: `${product.width}' × ${product.depth}' fixture has ${frontClearanceAvailable.toFixed(1)} ft front clearance versus ${requiredFrontClearance.toFixed(1)} ft specified.`,
+    budgetScore,
+    budgetReason: `Priced at ₹${product.price.toLocaleString('en-IN')}; lower fixture cost scores higher on this axis.`,
+    styleScore,
     styleReason: isStyleMatch
-      ? `Engineered for ${styleName} aesthetics with ${product.finish} finish.`
-      : `Neutral architectural silhouette complementing ${styleName}.`,
-    waterScore: (product.waterSavingRating || 4) >= 5 ? 96 : 90,
-    waterReason: product.category === 'smart_toilet' || product.category === 'toilet'
-      ? 'Class Five dual flush saves up to 42% annual municipal water.'
-      : product.category === 'faucet'
-        ? 'Laminar aerated flow stream reduces sink water consumption.'
-        : 'Lower-flow fixture efficiency estimate.',
-    clearanceVerified: true,
-    clearanceNote: `Meets Verre Studio ergonomics standard: ${product.clearance.front} ft front and ${product.clearance.sides} ft side clearances.`
+      ? `Listed styles include ${styleName} (${product.finish}).`
+      : `Not tagged for ${styleName}; treated as a compatible fill-in.`,
+    waterScore,
+    waterReason: product.flushVolumeLiters
+      ? `Rated ${product.flushVolumeLiters} L flush, water-saving rating ${product.waterSavingRating || 3}/5.`
+      : product.flowRateGpm
+        ? `Rated ${product.flowRateGpm} gpm, water-saving rating ${product.waterSavingRating || 3}/5.`
+        : `Water-saving rating ${product.waterSavingRating || 3}/5; no flush or flow spec on this SKU.`,
+    clearanceVerified,
+    clearanceNote: clearanceVerified
+      ? `Front clearance ${frontClearanceAvailable.toFixed(1)} ft with ${sideClearance} ft side buffer.`
+      : `Manual review: front clearance ${frontClearanceAvailable.toFixed(1)} ft is below the ${requiredFrontClearance.toFixed(1)} ft spec.`
   };
 }
 
@@ -194,6 +237,45 @@ function isWithinRoom(product: Product, candidate: PlacementCandidate, room: Roo
   );
 }
 
+function getOpeningFootprint(
+  opening: { wall: WallName; offset: number; width: number },
+  room: RoomConfig,
+  depth: number
+): { left: number; right: number; top: number; bottom: number } {
+  if (opening.wall === 'north') {
+    return { left: opening.offset, right: opening.offset + opening.width, top: 0, bottom: depth };
+  }
+
+  if (opening.wall === 'south') {
+    return { left: opening.offset, right: opening.offset + opening.width, top: room.width - depth, bottom: room.width };
+  }
+
+  if (opening.wall === 'west') {
+    return { left: 0, right: depth, top: opening.offset, bottom: opening.offset + opening.width };
+  }
+
+  return { left: room.length - depth, right: room.length, top: opening.offset, bottom: opening.offset + opening.width };
+}
+
+function overlapsOpeningFootprint(
+  product: Product,
+  candidate: PlacementCandidate,
+  room: RoomConfig,
+  opening: { wall: WallName; offset: number; width: number },
+  depth: number,
+  buffer = 0.05
+): boolean {
+  const fixture = getFixtureFootprint(product, candidate.x, candidate.y, candidate.rotation);
+  const openingBox = getOpeningFootprint(opening, room, depth);
+
+  return (
+    fixture.left < openingBox.right + buffer &&
+    fixture.right > openingBox.left - buffer &&
+    fixture.top < openingBox.bottom + buffer &&
+    fixture.bottom > openingBox.top - buffer
+  );
+}
+
 function wallOpeningDistance(
   wall: WallName,
   x: number,
@@ -328,11 +410,20 @@ function scoreCandidate(
     width: room.door.width ?? 2.5
   };
 
-  if (blocksOpening(product, candidate, room, doorOpening, 0.55)) {
+  if (
+    blocksOpening(product, candidate, room, doorOpening, 0.55) ||
+    overlapsOpeningFootprint(product, candidate, room, doorOpening, room.door.width ?? 2.5)
+  ) {
     return null;
   }
 
-  if (room.window && product.mountType !== 'wall' && blocksOpening(product, candidate, room, room.window, 0.25)) {
+  if (
+    room.window &&
+    (
+      blocksOpening(product, candidate, room, room.window, 0.25) ||
+      overlapsOpeningFootprint(product, candidate, room, room.window, 0.9)
+    )
+  ) {
     return null;
   }
 
@@ -529,7 +620,7 @@ function placeProduct(
     wallAttached: candidate.wall,
     score: Math.max(70, Math.min(99, candidate.score)),
     reason: reasonPrefix ? `${reasonPrefix} ${candidate.reason}.` : `${candidate.reason}.`,
-    explainability: createExplainability(product, candidate.x, candidate.y, room, style, candidate.frontClearance)
+    explainability: buildProductExplainability(product, style, candidate.frontClearance)
   };
 }
 
@@ -656,7 +747,7 @@ export function generateArchitecturalLayout(
       wallAttached: vanity.wallAttached,
       score: Math.min(99, vanity.score + 1),
       reason: `Mounted to ${vanity.name} at the generated vanity location.`,
-      explainability: createExplainability(fixtures.faucet, vanity.x, vanity.y, room, style, vanity.explainability?.spaceScore ? 2.8 : 2.4)
+      explainability: buildProductExplainability(fixtures.faucet, style, vanity.explainability?.spaceScore ? 2.8 : 2.4)
     });
   }
 
@@ -671,7 +762,7 @@ export function generateArchitecturalLayout(
       wallAttached: vanity.wallAttached,
       score: Math.min(99, vanity.score + 1),
       reason: `Aligned above ${vanity.name} so the 2D and 3D views share the same generated vanity wall.`,
-      explainability: createExplainability(fixtures.mirror, vanity.x, vanity.y, room, style, 2.8)
+      explainability: buildProductExplainability(fixtures.mirror, style, 2.8)
     });
   }
 

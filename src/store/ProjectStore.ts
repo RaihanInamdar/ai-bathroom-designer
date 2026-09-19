@@ -1,40 +1,50 @@
 import { create } from 'zustand';
-import { Project, AIDetectionResult, RecommendationResponse, LayoutArchetype } from '../models/Bathroom';
-import { RoomConfig, calculateMeasurements } from '../models/Room';
-import { PlacedProduct, Product, DesignStyle } from '../models/Product';
-import { SurfaceFinishes } from '../models/Tile';
+import {
+  Project,
+  AIDetectionResult,
+  RecommendationResponse,
+  RecommendationBundle,
+  LayoutArchetype,
+  RoomConfig,
+  calculateMeasurements,
+  PlacedProduct,
+  Product,
+  DesignStyle,
+  SurfaceFinishes
+} from '../types';
 import { calculateWallSegments } from '../features/planner/WallEngine';
 import { calculateProjectCost } from '../features/quotation/CostCalculator';
 import { getTileById } from '../data/tiles';
 import { PRESET_ROOMS } from '../data/presetRooms';
-import { generateArchitecturalLayout } from '../features/planner/RoomEngine';
+import { generateArchitecturalLayout, pickLayoutFixtures } from '../services/layoutEngine';
 import { CATALOG_PRODUCTS } from '../data/products';
+import { calculateWaterSavings } from '../services/waterSavings';
 
 const MAX_HISTORY = 25;
 
 function createInitialProducts(room: RoomConfig, style: DesignStyle, archetype: LayoutArchetype): PlacedProduct[] {
-  const van = CATALOG_PRODUCTS.find(p => p.category === 'vanity') || CATALOG_PRODUCTS[0];
-  const toi = CATALOG_PRODUCTS.find(p => p.category === 'smart_toilet' || p.category === 'toilet') || CATALOG_PRODUCTS[1];
-  const fct = CATALOG_PRODUCTS.find(p => p.category === 'faucet') || CATALOG_PRODUCTS[2];
-  const shw = CATALOG_PRODUCTS.find(p => p.category === 'shower');
-  const mir = CATALOG_PRODUCTS.find(p => p.category === 'mirror');
-  const acc = CATALOG_PRODUCTS.find(p => p.category === 'accessory');
-  const tub = CATALOG_PRODUCTS.find(p => p.category === 'bathtub');
-
   return generateArchitecturalLayout(
     room,
-    {
-      toilet: toi,
-      vanity: van,
-      faucet: fct,
-      shower: shw,
-      mirror: mir,
-      accessory: acc,
-      bathtub: tub
-    },
+    pickLayoutFixtures([], CATALOG_PRODUCTS),
     style,
     archetype
   );
+}
+
+function withUpdatedBundleTotals(
+  bundle: RecommendationBundle,
+  products: PlacedProduct[],
+  budget: number
+): RecommendationBundle {
+  const totalCost = products.reduce((sum, product) => sum + product.price, 0);
+  return {
+    ...bundle,
+    products,
+    totalCost,
+    remainingBudget: budget - totalCost,
+    budgetUtilizationPct: budget > 0 ? Math.round((totalCost / budget) * 100) : 0,
+    waterSavings: calculateWaterSavings(products)
+  };
 }
 
 function computeProjectDerivedState(
@@ -81,7 +91,7 @@ function createDefaultProject(): Project {
 
   const defaultFinishes: SurfaceFinishes = {
     floor: 'wooden_hinoki',
-    wall: 'fluted_hinoki'
+    wall: 'designer_fluted_3d'
   };
 
   const defaultStyle: DesignStyle = 'minimalist_modern';
@@ -120,10 +130,14 @@ export interface ProjectStoreState {
   setFinishes: (finishes: SurfaceFinishes) => void;
   setStyle: (style: DesignStyle) => void;
   setBudget: (budget: number) => void;
-  setActiveArchetype: (archetype: LayoutArchetype) => void;
+  setActiveArchetype: (archetype: LayoutArchetype, options?: { rearrange?: boolean }) => void;
   setAIDetection: (aiDetection: AIDetectionResult) => void;
   setRecommendations: (recommendations: RecommendationResponse) => void;
   applyRecommendationBundle: (bundleType: 'optimal' | 'budget_saver' | 'luxury_upgrade') => void;
+  patchActiveBundleProducts: (
+    bundleType: 'optimal' | 'budget_saver' | 'luxury_upgrade',
+    products: PlacedProduct[]
+  ) => void;
   applyPresetRoom: (presetId: string) => void;
   recalculateQuotation: () => void;
 
@@ -244,7 +258,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
           rotation: p.rotation,
           wallAttached: p.wallAttached,
           mountType: p.mountType,
-          score: 96,
+          score: Math.min(99, Math.round((p.score || 80) * 0.9 + 10)),
           reason: `Custom selected fixture model.`
         };
       }
@@ -287,33 +301,19 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     });
   },
 
-  setActiveArchetype: (archetype) => {
+  setActiveArchetype: (archetype, options) => {
     const current = get().project;
     const past = [...get().past.slice(-MAX_HISTORY), current];
+    const rearrange = options?.rearrange !== false;
 
-    // Rearrange products to match the new archetype
-    const van = current.products.find(p => p.category === 'vanity') || CATALOG_PRODUCTS.find(p => p.category === 'vanity')!;
-    const toi = current.products.find(p => p.category === 'smart_toilet' || p.category === 'toilet') || CATALOG_PRODUCTS.find(p => p.category === 'smart_toilet' || p.category === 'toilet')!;
-    const fct = current.products.find(p => p.category === 'faucet') || CATALOG_PRODUCTS.find(p => p.category === 'faucet')!;
-    const shw = current.products.find(p => p.category === 'shower');
-    const mir = current.products.find(p => p.category === 'mirror');
-    const acc = current.products.find(p => p.category === 'accessory');
-    const tub = current.products.find(p => p.category === 'bathtub');
-
-    const newPlaced = generateArchitecturalLayout(
-      current.room,
-      {
-        toilet: toi,
-        vanity: van,
-        faucet: fct,
-        shower: shw,
-        mirror: mir,
-        accessory: acc,
-        bathtub: tub
-      },
-      current.style,
-      archetype
-    );
+    const newPlaced = rearrange
+      ? generateArchitecturalLayout(
+          current.room,
+          pickLayoutFixtures(current.products, CATALOG_PRODUCTS),
+          current.style,
+          archetype
+        )
+      : current.products;
 
     const updated = computeProjectDerivedState({
       ...current,
@@ -378,6 +378,32 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
       ...current,
       products: bundle.products,
       activeArchetype: nextArchetype
+    });
+
+    set({ project: updated, past, future: [] });
+  },
+
+  patchActiveBundleProducts: (bundleType, products) => {
+    const current = get().project;
+    if (!current.recommendations) {
+      get().setProducts(products);
+      return;
+    }
+
+    const past = [...get().past.slice(-MAX_HISTORY), current];
+    const nextRecommendations = { ...current.recommendations };
+    if (bundleType === 'optimal') {
+      nextRecommendations.optimal = withUpdatedBundleTotals(current.recommendations.optimal, products, current.budget);
+    } else if (bundleType === 'budget_saver') {
+      nextRecommendations.budgetSaver = withUpdatedBundleTotals(current.recommendations.budgetSaver, products, current.budget);
+    } else {
+      nextRecommendations.luxuryUpgrade = withUpdatedBundleTotals(current.recommendations.luxuryUpgrade, products, current.budget);
+    }
+
+    const updated = computeProjectDerivedState({
+      ...current,
+      products,
+      recommendations: nextRecommendations
     });
 
     set({ project: updated, past, future: [] });

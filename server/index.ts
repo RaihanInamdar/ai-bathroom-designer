@@ -107,8 +107,8 @@ app.post('/api/analyze-image', async (req, res) => {
   }
 });
 
-// Natural Language Copilot Interpreter
-app.post('/api/copilot-action', async (req, res) => {
+// Natural Language Copilot Interpreter (supports both /api/copilot and /api/copilot-action)
+const handleCopilotEndpoint = async (req: express.Request, res: express.Response) => {
   try {
     const { message, room, budget, style, finishes, bundleSummary } = req.body;
     if (!message || !room || !budget || !style || !finishes) {
@@ -136,7 +136,10 @@ app.post('/api/copilot-action', async (req, res) => {
       assistantReply: `I could not safely interpret that request: ${err.message}`
     });
   }
-});
+};
+
+app.post('/api/copilot', handleCopilotEndpoint);
+app.post('/api/copilot-action', handleCopilotEndpoint);
 
 // Save Design
 app.post('/api/save-design', (req, res) => {
@@ -158,6 +161,17 @@ app.get('/api/designs', (req, res) => {
   res.json({ success: true, designs: savedDesigns });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[Verre Studio API] Server running on http://localhost:${PORT}`);
+});
+
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(
+      `[Verre Studio API] Port ${PORT} is already in use. Stop the existing server or set PORT in .env, then update vite.config.ts proxy to match.`
+    );
+    process.exit(1);
+  }
+
+  throw error;
 });

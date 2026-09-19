@@ -7,7 +7,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ['react', 'react-dom'],
           mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
           three: ['three', '@react-three/fiber', '@react-three/drei'],
           export: ['jspdf', 'html2canvas', 'canvas-confetti'],

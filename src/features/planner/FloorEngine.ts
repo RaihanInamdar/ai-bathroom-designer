@@ -1,5 +1,4 @@
-import { PlacedProduct } from '../../models/Product';
-import { RoomConfig } from '../../models/Room';
+import { PlacedProduct, RoomConfig } from '../../types';
 
 export function getEffectiveDimensions(p: PlacedProduct): { width: number; depth: number } {
   const isRotated = p.rotation === 90 || p.rotation === 270;

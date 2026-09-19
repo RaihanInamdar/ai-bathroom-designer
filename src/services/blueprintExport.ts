@@ -1,6 +1,4 @@
-import { RoomConfig, calculateMeasurements } from '../models/Room';
-import { PlacedProduct } from '../models/Product';
-import { SurfaceFinishes } from '../models/Tile';
+import { RoomConfig, PlacedProduct, SurfaceFinishes, calculateMeasurements } from '../types';
 import { getTileById } from '../data/tiles';
 
 /**

@@ -8,8 +8,9 @@ import {
   ModifyDesignRequest,
   ModifyDesignResponse
 } from '../types';
-import { CATALOG_PRODUCTS } from '../data/products';
+import { calculateWaterSavings } from './waterSavings';
 import { generateArchitecturalLayout } from './layoutEngine';
+import { CATALOG_PRODUCTS } from '../data/products';
 
 const API_BASE = '/api';
 
@@ -205,20 +206,7 @@ function clientSideRecommend(req: RecommendationRequest): RecommendationResponse
           `Water estimate (88/100): Uses lower-flow toilet, faucet, and shower assumptions where available.`
         ]
       },
-      waterSavings: {
-        annualBaselineLiters: 68000,
-        annualKohlerLiters: 39500,
-        annualSavedLiters: 28500,
-        percentReduction: 42,
-        annualBillSavingsInr: 2370,
-        tenYearBillSavingsInr: 23700,
-        co2OffsetKg: 85,
-        assumptions: [
-          'Based on a typical 4-person household (4 flushes/person/day, 8 min shower).',
-          'Baseline assumes dated 13L commode and non-aerated 2.2 gpm brass fixtures.',
-          'Financial estimate uses conservative water tariff plus heated-water energy only for faucet and shower savings.'
-        ]
-      },
+      waterSavings: calculateWaterSavings(placed),
       aiSummary: `AI optimized layout for ${req.room.length}×${req.room.width} ft in ${req.style.replace('_', ' ')} style.`
     };
   };
